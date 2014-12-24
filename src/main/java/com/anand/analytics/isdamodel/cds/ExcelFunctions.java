@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Created by aanand on 10/27/2014.
+ * Created by Anand on 10/27/2014.
  */
 public class ExcelFunctions {
 

@@ -1,7 +1,7 @@
 package com.anand.analytics.isdamodel.utils;
 
 /**
- * Created by aanand on 10/24/2014.
+ * Created by Anand on 10/24/2014.
  */
 public enum TBadDayConvention {
     FOLLOW, PREVIOUS, NONE, MODIFIED;

@@ -20,7 +20,7 @@ import java.util.UUID;
 import static com.anand.analytics.isdamodel.cds.TDateFunctions.cdsDayCountFraction;
 
 /**
- * Created by aanand on 12/3/2014.
+ * Created by Anand on 12/3/2014.
  */
 public class CdsFunctionLibrary {
     private final static Logger logger = Logger.getLogger(CdsFunctionLibrary.class);

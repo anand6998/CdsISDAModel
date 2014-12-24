@@ -1,7 +1,7 @@
 package com.anand.analytics.isdamodel.utils;
 
 /**
- * Created by aanand on 10/21/2014.
+ * Created by Anand on 10/21/2014.
  */
 public enum PeriodType {
     M, D, U, A, Y, S, Q, W, F, E, B, G, H, I, J, K, L, T, V;

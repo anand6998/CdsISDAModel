@@ -8,7 +8,7 @@ import org.threeten.bp.LocalDate;
 import org.threeten.bp.temporal.ChronoUnit;
 
 /**
- * Created by aanand on 12/18/2014.
+ * Created by Anand on 12/18/2014.
  */
 public class Defaulted {
     private static final Logger logger = Logger.getLogger(Defaulted.class);

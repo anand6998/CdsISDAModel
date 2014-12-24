@@ -5,7 +5,7 @@ import com.anand.analytics.isdamodel.cds.TCurve;
 import com.anand.analytics.isdamodel.exception.TCurveNotFoundException;
 
 /**
- * Created by aanand on 12/17/2014.
+ * Created by Anand on 12/17/2014.
  */
 public class LocalCacheManager implements CdsCacheManager {
     private final ServiceContext serviceContext;

@@ -8,7 +8,7 @@ import com.anand.analytics.isdamodel.utils.TStubMethod;
 import org.threeten.bp.LocalDate;
 
 /**
- * Created by aanand on 10/21/2014.
+ * Created by Anand on 10/21/2014.
  */
 public class CdsSpreadContext {
     LocalDate today;

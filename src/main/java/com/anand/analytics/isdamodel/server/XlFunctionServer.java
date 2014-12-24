@@ -8,7 +8,7 @@ import org.boris.xlloop.handler.FunctionInformationHandler;
 import org.boris.xlloop.reflect.ReflectFunctionHandler;
 
 /**
- * Created by aanand on 12/3/2014.
+ * Created by Anand on 12/3/2014.
  */
 public class XlFunctionServer {
     static final Logger logger = Logger.getLogger(XlFunctionServer.class.getName());

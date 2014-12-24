@@ -12,7 +12,7 @@ import static com.anand.analytics.isdamodel.cds.TDateFunctions.cdsDayCountFracti
 
 
 /**
- * Created by aanand on 10/21/2014.
+ * Created by Anand on 10/21/2014.
  */
 public class TCurve {
     final static Logger logger = Logger.getLogger(TCurve.class);

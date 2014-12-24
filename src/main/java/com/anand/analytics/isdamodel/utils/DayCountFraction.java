@@ -4,7 +4,7 @@ import org.threeten.bp.LocalDate;
 import org.threeten.bp.temporal.ChronoUnit;
 
 /**
- * Created by aanand on 10/22/2014.
+ * Created by Anand on 10/22/2014.
  */
 @Deprecated
 public class DayCountFraction {

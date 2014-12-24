@@ -8,7 +8,7 @@ import org.threeten.bp.temporal.ChronoUnit;
 
 
 /**
- * Created by aanand on 12/4/2014.
+ * Created by Anand on 12/4/2014.
  */
 public class TRateFunctions {
     private static Logger logger = Logger.getLogger(TRateFunctions.class);

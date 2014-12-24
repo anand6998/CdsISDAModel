@@ -3,7 +3,7 @@ package com.anand.analytics.isdamodel.cds;
 import org.threeten.bp.LocalDate;
 
 /**
- * Created by aanand on 12/4/2014.
+ * Created by Anand on 12/4/2014.
  */
 public class TFeeLegCashFlow {
     LocalDate date;

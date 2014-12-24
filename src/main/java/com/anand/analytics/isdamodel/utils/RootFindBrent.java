@@ -3,7 +3,7 @@ package com.anand.analytics.isdamodel.utils;
 import org.apache.log4j.Logger;
 
 /**
- * Created by aanand on 10/21/2014.
+ * Created by Anand on 10/21/2014.
  */
 public class RootFindBrent {
     final static Logger logger = Logger.getLogger(RootFindBrent.class);

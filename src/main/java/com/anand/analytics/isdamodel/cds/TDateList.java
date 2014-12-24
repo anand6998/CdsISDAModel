@@ -5,7 +5,7 @@ import org.threeten.bp.LocalDate;
 import java.util.List;
 
 /**
- * Created by aanand on 10/23/2014.
+ * Created by Anand on 10/23/2014.
  */
 public class TDateList implements Cloneable {
     int fNumItems;

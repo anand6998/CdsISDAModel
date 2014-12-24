@@ -1,7 +1,7 @@
 package com.anand.analytics.isdamodel.utils;
 
 /**
- * Created by aanand on 11/25/2014.
+ * Created by Anand on 11/25/2014.
  */
 public class IntHolder {
     private int value;

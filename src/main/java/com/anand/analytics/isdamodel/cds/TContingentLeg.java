@@ -12,7 +12,7 @@ import static com.anand.analytics.isdamodel.cds.TRateFunctions.cdsZeroPrice;
 
 
 /**
- * Created by aanand on 10/21/2014.
+ * Created by Anand on 10/21/2014.
  */
 public class TContingentLeg {
 

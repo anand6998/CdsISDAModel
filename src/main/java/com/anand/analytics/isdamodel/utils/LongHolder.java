@@ -1,7 +1,7 @@
 package com.anand.analytics.isdamodel.utils;
 
 /**
- * Created by aanand on 12/1/2014.
+ * Created by Anand on 12/1/2014.
  */
 public class LongHolder {
     private long value;
