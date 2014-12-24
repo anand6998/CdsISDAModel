@@ -22,28 +22,17 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ServiceContext {
 
     final static Logger logger = Logger.getLogger(ServiceContext.class);
-    final Cache irDataCache;
+
     final Cache tCurveCache;
-    final Lock irCurveLock = new ReentrantLock();
+
     final Lock tCurveLock = new ReentrantLock();
 
     final CacheManager cacheManger;
 
     public ServiceContext(CacheManager factoryBean) {
         this.cacheManger = factoryBean;
-        irDataCache = CacheManager.getInstance().getCache("RatesCache");
-        tCurveCache = CacheManager.getInstance().getCache("CdsCurveCache");
-    }
 
-    public void clearIrCache() {
-        try {
-            logger.info("IRCurve cache size (Before clearing) : " + irDataCache.getKeys().size());
-            irCurveLock.lock();
-            irDataCache.removeAll();
-            logger.info("IRCurve cache size (After clearing) : " + (irDataCache.getKeys().size()));
-        } finally {
-            irCurveLock.unlock();
-        }
+        tCurveCache = CacheManager.getInstance().getCache("CdsCurveCache");
     }
 
     public void clearTCurveCache() {
