@@ -1,7 +1,7 @@
 package com.anand.analytics.isdamodel.context;
 
 import com.anand.analytics.isdamodel.cds.TCurve;
-import com.anand.analytics.isdamodel.server.TCurveNotFoundException;
+import com.anand.analytics.isdamodel.exception.TCurveNotFoundException;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;

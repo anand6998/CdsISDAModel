@@ -1,4 +1,4 @@
-package com.anand.analytics.isdamodel.server;
+package com.anand.analytics.isdamodel.exception;
 
 /**
  * Created by aanand on 12/15/2014.
