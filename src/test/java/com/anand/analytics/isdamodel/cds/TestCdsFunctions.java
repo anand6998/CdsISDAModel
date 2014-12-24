@@ -14,7 +14,7 @@ import static com.anand.analytics.isdamodel.cds.TDateFunctions.cdsDayCountFracti
 
 
 /**
- * Created by aanand on 10/28/2014.
+ * Created by Anand on 10/28/2014.
  */
 public class TestCdsFunctions {
 

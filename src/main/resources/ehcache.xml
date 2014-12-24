@@ -13,7 +13,7 @@
             timeToIdleSeconds="120"
             timeToLiveSeconds="120"
             diskSpoolBufferSizeMB="30"
-            maxEntriesLocalDisk="10000000"
+            maxEntriesLocalDisk="10000"
             diskExpiryThreadIntervalSeconds="120"
             memoryStoreEvictionPolicy="LRU"
             statistics="false">
