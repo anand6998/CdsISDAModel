@@ -10,7 +10,6 @@ import org.threeten.bp.temporal.ChronoUnit;
 import static com.anand.analytics.isdamodel.cds.TRateFunctions.cdsForwardZeroPrice;
 import static com.anand.analytics.isdamodel.cds.TRateFunctions.cdsZeroPrice;
 
-
 /**
  * Created by Anand on 10/21/2014.
  */
