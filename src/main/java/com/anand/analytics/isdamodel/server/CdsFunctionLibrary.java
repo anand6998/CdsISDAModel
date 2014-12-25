@@ -725,8 +725,25 @@ public class CdsFunctionLibrary {
             final TDateInterval couponInterval = ExcelFunctions.cdsStringToDateInterval(xlsCouponInterval);
             final TCurve discountCurve = cdsCacheManager.get(xlhDiscountCurveHandle);
             final TCurve spreadCurve = cdsCacheManager.get(xlhSpreadCurveHandle);
+            final boolean payAccruedOnDefault = xliPayAccruedOnDefault == 0 ? false : true;
 
             DoubleHolder[] results = new DoubleHolder[endDates.length];
+
+            CdsOne.cdsCdsParSpreads(today,
+                    stepinDate,
+                    startDate,
+                    endDates,
+                    payAccruedOnDefault,
+                    couponInterval,
+                    stubType,
+                    paymentDcc,
+                    badDayConvention,
+                    holidays,
+                    discountCurve,
+                    spreadCurve,
+                    xldRecoveryRate,
+                    results
+                    );
 
             XLArray array = new XLArray(results.length, 1);
             for (int i = 0; i < results.length; i++) {
