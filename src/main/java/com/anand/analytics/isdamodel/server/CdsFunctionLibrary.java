@@ -38,7 +38,7 @@ public class CdsFunctionLibrary {
     private final static Logger logger = Logger.getLogger(CdsFunctionLibrary.class);
     private final static CdsCacheManager cdsCacheManager = (CdsCacheManager) XlServerSpringUtils.getBeanByName("cdsCacheManager");
 
-    @XLFunction(name = "APO.CDS.IRZeroCurveMake", args = {
+    @XLFunction(name = "CDS.IRZeroCurveMake", args = {
             "BaseDate",
             "Dates",
             "Rates",
@@ -52,7 +52,7 @@ public class CdsFunctionLibrary {
             "Basis",
             "DCC"
 
-    }, category = "APO CDS Functions")
+    }, category = "CDS Functions")
     public static XLoper cdsIrZeroCurveMake(Double xlBaseDate,
                                             double[] xlDates,
                                             double[] rates,
@@ -86,7 +86,7 @@ public class CdsFunctionLibrary {
     }
 
 
-    @XLFunction(name = "APO.CDS.ParSpreadFlat", args = {
+    @XLFunction(name = "CDS.ParSpreadFlat", args = {
             "Today",
             "ValueDate",
             "BenchmarkStartDate",
@@ -123,7 +123,7 @@ public class CdsFunctionLibrary {
                     "UpfrontCharge",
                     "RecoveryRate",
                     "IsPriceClean"
-            }, category = "APO CDS Functions")
+            }, category = "CDS Functions")
     public static XLoper cdsParSpreadFlat(Double xldToday,
                                           Double xldValueDate,
                                           Double xldBenchmarktStartDate,
@@ -225,7 +225,7 @@ public class CdsFunctionLibrary {
     }
 
 
-    @XLFunction(name = "APO.CDS.UpfrontFlat", args = {
+    @XLFunction(name = "CDS.UpfrontFlat", args = {
             "Today",
             "ValueDate",
             "BenchmarkStartDate",
@@ -262,7 +262,7 @@ public class CdsFunctionLibrary {
                     "ParSpread",
                     "RecoveryRate",
                     "IsPriceClean"
-            }, category = "APO CDS Functions")
+            }, category = "CDS Functions")
     public static XLoper cdsUpfrontFlat(Double xldToday,
                                         Double xldValueDate,
                                         Double xldBenchmarktStartDate,
@@ -364,7 +364,7 @@ public class CdsFunctionLibrary {
         }
     }
 
-    @XLFunction(name = "APO.CDS.FeeLegFlows", args = {
+    @XLFunction(name = "CDS.FeeLegFlows", args = {
             "StartDate",
             "EndDate",
             "Rate",
@@ -384,7 +384,7 @@ public class CdsFunctionLibrary {
             "PaymentDCC",
             "BadDayConvention",
             "Holidays"
-    }, category = "APO CDS Functions")
+    }, category = "CDS Functions")
     public static XLoper cdsFeeLegFlows(
             Double xldStartDate,
             Double xldEndDate,
@@ -495,7 +495,7 @@ public class CdsFunctionLibrary {
         }
     }
 
-    @XLFunction(name = "APO.CDS.CleanSpreadCurveBuild", args = {
+    @XLFunction(name = "CDS.CleanSpreadCurveBuild", args = {
             "Today",
             "StartDate",
             "StepinDate",
@@ -527,7 +527,7 @@ public class CdsFunctionLibrary {
             "Holidays",
             "DiscountCurve",
             "RecoveryRate"
-    }, category = "APO CDS Functions")
+    }, category = "CDS Functions")
     public static XLoper cdsCleanSpreadCurveBuild(Double xldToday,
                                                   Double xldStartDate,
                                                   Double xldstepinDate,
@@ -612,7 +612,7 @@ public class CdsFunctionLibrary {
 
     }
 
-    @XLFunction(name = "APO.CDS.DiscountFactor", args = {"CurveHandle", "Date"}, category = "APO CDS Functions")
+    @XLFunction(name = "CDS.DiscountFactor", args = {"CurveHandle", "Date"}, category = "CDS Functions")
     public static XLoper cdsDiscountFactor(
             String xlhCurveKey,
             Double xldDate
@@ -638,7 +638,7 @@ public class CdsFunctionLibrary {
     }
 
 
-    @XLFunction(name = "APO.CDS.ParSpreads", args = {
+    @XLFunction(name = "CDS.ParSpreads", args = {
             "Today",
             "Stepin Date",
             "Start Date",
@@ -666,7 +666,7 @@ public class CdsFunctionLibrary {
             "DiscountCurve",
             "SpreadCurve",
             "RecoveryRate"
-    }, category = "APO CDS Functions")
+    }, category = "CDS Functions")
     public static XLoper cdsParSpreads(Double xldToday,
                                        Double xldStepinDate,
                                        Double xldStartDate,
@@ -741,7 +741,7 @@ public class CdsFunctionLibrary {
 
     }
 
-    @XLFunction(name = "APO.CDS.CdsPrice", args = {
+    @XLFunction(name = "CDS.CdsPrice", args = {
             "Today",
             "ValueDate",
             "StepinDate",
@@ -775,7 +775,7 @@ public class CdsFunctionLibrary {
             "SpreadCurve",
             "RecoveryRate",
             "IsPriceClean"
-    }, category = "APO CDS Functions")
+    }, category = "CDS Functions")
     public static XLoper cdsCdsPrice(Double xldToday,
                                      Double xldValueDate,
                                      Double xldstepinDate,
@@ -877,7 +877,7 @@ public class CdsFunctionLibrary {
 
     }
 
-    @XLFunction(name = "APO.CDS.DatesAndRates", args = {"Curve"}, argHelp = {"CurveHandle"})
+    @XLFunction(name = "CDS.DatesAndRates", args = {"Curve"}, argHelp = {"CurveHandle"})
     public static XLoper cdsDatesAndRates(String xlhCurveHandle) {
         try {
             TCurve tCurve = cdsCacheManager.get(xlhCurveHandle);
