@@ -25,6 +25,13 @@ public class TDateFunctions {
 
     private final static Logger logger = Logger.getLogger(TDateFunctions.class);
 
+    private static int leapDays[] = {
+            0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    /* JAN  FEB  MAR  APR  MAY  JUN  JUL  AUG  SEP  OCT  NOV  DEC */
+    private static int days[] = {
+            0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    /* JAN  FEB  MAR  APR  MAY  JUN  JUL  AUG  SEP  OCT  NOV  DEC */
+
     public static ReturnStatus cdsDayCountFraction(LocalDate date1, LocalDate date2, DayCount method, DoubleHolder result) {
         LocalDate currentDate;
         LocalDate temp;
@@ -370,12 +377,6 @@ public class TDateFunctions {
             throw new RuntimeException("Invalid days in month");
         }
 
-        int leapDays[] = {
-                0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-    /* JAN  FEB  MAR  APR  MAY  JUN  JUL  AUG  SEP  OCT  NOV  DEC */
-        int days[] = {
-                0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-    /* JAN  FEB  MAR  APR  MAY  JUN  JUL  AUG  SEP  OCT  NOV  DEC */
         if (mdy.isLeap) {
             if (day > leapDays[month]) {
                 day = leapDays[month];
