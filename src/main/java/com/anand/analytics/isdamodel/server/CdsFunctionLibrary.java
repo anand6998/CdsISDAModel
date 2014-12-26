@@ -965,6 +965,16 @@ public class CdsFunctionLibrary {
         Validate.notNull(xlstraTypes, "Invalid types array");
         Validate.notEmpty(xlstraTypes, "Invalid types array");
         Validate.notNull(xldaEndDates, "Invalid end dates");
+        Validate.notNull(xldaRates, "Invalid rates");
+        Validate.notNull(xlsmmDc, "Invalid money market daycount");
+        Validate.notNull(xlsFixedIvl, "Invalid interval for fixed leg");
+        Validate.notNull(xlsFloatIvl, "Invalid interval for float leg");
+        Validate.notNull(xlsFixedDcc, "Invalid daycount for fixed leg");
+        Validate.notNull(xlsFloatDcc, "Invalid daycount for float leg");
+        Validate.notNull(xlsSwapBdc, "Invalid swap bdc");
+        Validate.notEmpty(xlsHolidays, "Invalid holiday calendar");
+
+
 
         return new XLNum(0);
     }
