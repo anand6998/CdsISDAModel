@@ -894,7 +894,8 @@ public class CdsFunctionLibrary {
 
     }
 
-    @XLFunction(name = "CDS.DatesAndRates", args = {"Curve"}, argHelp = {"CurveHandle"})
+    @XLFunction(name = "CDS.DatesAndRates", args = {"Curve"}, argHelp = {"CurveHandle"},
+    category = "CDS Functions")
     public static XLoper cdsDatesAndRates(String xlhCurveHandle) {
         try {
             TCurve tCurve = cdsCacheManager.get(xlhCurveHandle);
@@ -916,5 +917,11 @@ public class CdsFunctionLibrary {
             return new XLString(ex.getMessage());
         }
 
+    }
+
+    @XLFunction(name = "CDS.ObjectTest", args = {"Object"}, argHelp = {"Object"}, category = "CDS Functions")
+    public static XLoper cdsObjectTest(Object object) {
+        System.out.println(object);
+        return new XLNum(0);
     }
 }
