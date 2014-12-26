@@ -924,4 +924,48 @@ public class CdsFunctionLibrary {
         System.out.println(object);
         return new XLNum(0);
     }
+
+    @XLFunction(name = "CDS.IRZeroCurveBuild", args = {
+            "ValueDate",
+            "Types",
+            "EndDates",
+            "Rates",
+            "MMDC",
+            "FixedIVL",
+            "FloatIVL",
+            "FixedDCC",
+            "FloatDCC",
+            "SwapBDC",
+            "Holidays"
+    }, argHelp = {"ValueDate",
+            "Types",
+            "EndDates",
+            "Rates",
+            "MMDC",
+            "FixedIVL",
+            "FloatIVL",
+            "FixedDCC",
+            "FloatDCC",
+            "SwapBDC",
+            "Holidays"}, category = "CDS Functions")
+    public static XLoper cdsIrZeroCurveBuild(
+            Double xldValueDate,
+            String[] xlstraTypes,
+            double[] xldaEndDates,
+            double[] xldaRates,
+            String xlsmmDc,
+            String xlsFixedIvl,
+            String xlsFloatIvl,
+            String xlsFixedDcc,
+            String xlsFloatDcc,
+            String xlsSwapBdc,
+            String xlsHolidays
+    ) {
+        Validate.notNull(xldValueDate, "Invalid value date");
+        Validate.notNull(xlstraTypes, "Invalid types array");
+        Validate.notEmpty(xlstraTypes, "Invalid types array");
+        Validate.notNull(xldaEndDates, "Invalid end dates");
+
+        return new XLNum(0);
+    }
 }
