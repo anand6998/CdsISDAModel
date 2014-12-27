@@ -13,6 +13,8 @@ import org.threeten.bp.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.anand.analytics.isdamodel.utils.CdsFunctions.MIN;
+
 /**
  * Created by Anand on 12/4/2014.
  */
@@ -107,9 +109,9 @@ public class TDateFunctions {
                 }
 
                 if (isLeap.get())
-                    leapDays += min(actDays.get(), daysLeft.get());
+                    leapDays += MIN(actDays.get(), daysLeft.get());
                 else
-                    nonLeapDays += min(actDays.get(), daysLeft.get());
+                    nonLeapDays += MIN(actDays.get(), daysLeft.get());
 
                 /**
                  * loop through the years
@@ -294,9 +296,7 @@ public class TDateFunctions {
     }
 
 
-    public static double min (double a, double b) {
-        return a < b ? a : b;
-    }
+
 
     public static LocalDate dtFwdAny
             (LocalDate startDate,      /* (I) date */

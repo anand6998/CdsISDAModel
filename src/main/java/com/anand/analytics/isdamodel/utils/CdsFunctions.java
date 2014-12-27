@@ -11,4 +11,8 @@ public class CdsFunctions {
     public static int ABS(int value) {
         return value < 0 ? value * -1 : value;
     }
+
+    public static double MIN (double a, double b) {
+        return a < b ? a : b;
+    }
 }
