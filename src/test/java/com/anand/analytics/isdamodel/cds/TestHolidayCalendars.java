@@ -3,6 +3,7 @@ package com.anand.analytics.isdamodel.cds;
 import com.anand.analytics.isdamodel.context.XlServerSpringUtils;
 import com.anand.analytics.isdamodel.date.HolidayCalendar;
 import com.anand.analytics.isdamodel.date.HolidayCalendarFactory;
+import com.anand.analytics.isdamodel.date.MultiHolidayCalendar;
 import junit.framework.Assert;
 import org.junit.Test;
 import org.threeten.bp.LocalDate;
@@ -12,7 +13,7 @@ import org.threeten.bp.LocalDate;
  */
 public class TestHolidayCalendars {
     @Test
-    public void testHolidayCalendars() {
+    public void testHolidayCalendars() throws Exception {
         HolidayCalendarFactory calendarFactory = (HolidayCalendarFactory) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
         HolidayCalendar noHolidayCalendar = calendarFactory.getCalendar("None");
         HolidayCalendar usHolidayCalendar = calendarFactory.getCalendar("USD");
@@ -22,6 +23,20 @@ public class TestHolidayCalendars {
         LocalDate usHolidayCalendarDate = usHolidayCalendar.addBusinessDays(todaysDate, 20);
 
         Assert.assertEquals(LocalDate.of(2015, 1, 16), noHolidayCalendarDate );
-        Assert.assertEquals(LocalDate.of(2015, 1, 20), usHolidayCalendarDate);
+        Assert.assertEquals(LocalDate.of(2015, 1, 21), usHolidayCalendarDate);
+
+        System.out.println(noHolidayCalendarDate);
+        System.out.println(usHolidayCalendarDate);
+    }
+
+    @Test
+    public void testMultiHolidayCalendar() throws Exception {
+        HolidayCalendarFactory calendarFactory = (HolidayCalendarFactory) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
+        HolidayCalendar usdUaeHolidayCalendar = calendarFactory.getCalendar("USD,UAE");
+
+        LocalDate todaysDate = LocalDate.of(2013, 12, 20);
+        LocalDate usdUaeHolidayCalendarDate = usdUaeHolidayCalendar.addBusinessDays(todaysDate, 20);
+
+        System.out.println(usdUaeHolidayCalendarDate);
     }
 }

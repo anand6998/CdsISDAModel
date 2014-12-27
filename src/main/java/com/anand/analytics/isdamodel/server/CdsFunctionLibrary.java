@@ -1,13 +1,7 @@
 package com.anand.analytics.isdamodel.server;
 
 
-import com.anand.analytics.isdamodel.cds.CdsBootstrap;
-import com.anand.analytics.isdamodel.cds.CdsOne;
-import com.anand.analytics.isdamodel.cds.ExcelFunctions;
-import com.anand.analytics.isdamodel.cds.TCurve;
-import com.anand.analytics.isdamodel.cds.TFeeLeg;
-import com.anand.analytics.isdamodel.cds.TFeeLegCashFlow;
-import com.anand.analytics.isdamodel.cds.TRateFunctions;
+import com.anand.analytics.isdamodel.cds.*;
 import com.anand.analytics.isdamodel.context.CdsCacheManager;
 import com.anand.analytics.isdamodel.context.XlServerSpringUtils;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
@@ -1013,19 +1007,25 @@ public class CdsFunctionLibrary {
                      * Untested logic - the example code never goes into this if condition
                      */
                     if (baseDate.periodUntil(endDates[i], ChronoUnit.DAYS) <=3 ) {
-                        TDateInterval tDateInterval = new TDateInterval(
+                        final TDateInterval tDateInterval = new TDateInterval(
                                 baseDate.periodUntil(endDates[i], ChronoUnit.DAYS),
                                 PeriodType.D,
                                 0
                         );
 
-                        TDateAdjIntvl tDateAdjIntvl = new TDateAdjIntvl(
+                        final TDateAdjIntvl tDateAdjIntvl = new TDateAdjIntvl(
                                 tDateInterval, CdsDateAdjType.BUSINESS,
                                 calendar,
                                 badDayConv
                         );
 
-
+                        /**
+                         * This code just tries to move each date by the no. of adjusted business days
+                         *
+                         */
+                        final int adjBusDays = (int) baseDate.periodUntil(endDates[i], ChronoUnit.DAYS);
+                        DateHolder returnValue = new DateHolder();
+                        TDateFunctions.cdsDateFwdAdj(baseDate, tDateAdjIntvl, returnValue);
                     }
                 }
             }

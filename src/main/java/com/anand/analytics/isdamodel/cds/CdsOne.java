@@ -368,16 +368,19 @@ public class CdsOne {
                                                boolean protectStart,
                                                boolean cleanPrice,
                                                DoubleHolder pv) {
+        try {
+            final TFeeLeg fl = new TFeeLeg(startDate, endDate, payAccruedOnDefault, dateInterval,
+                    stubType, notional, couponRate, paymentDcc, badDayConvention,
+                    calendar, protectStart);
 
-        final TFeeLeg fl = new TFeeLeg(startDate, endDate, payAccruedOnDefault, dateInterval,
-                stubType, notional, couponRate, paymentDcc, badDayConvention,
-                calendar, protectStart);
-
-        if (fl.getPV(today, valueDate, stepinDate, discCurve, spreadCurve, cleanPrice, pv).equals(ReturnStatus.FAILURE)) {
-            logger.error("CdsOne.cdsCdsFeeLegPV()::Error calculating fee leg PV");
+            if (fl.getPV(today, valueDate, stepinDate, discCurve, spreadCurve, cleanPrice, pv).equals(ReturnStatus.FAILURE)) {
+                logger.error("CdsOne.cdsCdsFeeLegPV()::Error calculating fee leg PV");
+                return ReturnStatus.FAILURE;
+            }
+            return ReturnStatus.SUCCESS;
+        } catch(Exception ex) {
+            logger.error(ex);
             return ReturnStatus.FAILURE;
         }
-        return ReturnStatus.SUCCESS;
-
     }
 }

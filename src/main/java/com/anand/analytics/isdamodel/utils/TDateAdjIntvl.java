@@ -6,13 +6,13 @@ package com.anand.analytics.isdamodel.utils;
 public class TDateAdjIntvl {
     final TDateInterval interval;
     final CdsDateAdjType isBusDays;
-    final String holidayFile;
+    final String calendar;
     final TBadDayConvention badDayConvention;
 
     public TDateAdjIntvl(TDateInterval interval, CdsDateAdjType isBusDays, String holidayFile, TBadDayConvention badDayConvention) {
         this.interval = interval;
         this.isBusDays = isBusDays;
-        this.holidayFile = holidayFile;
+        this.calendar = holidayFile;
         this.badDayConvention = badDayConvention;
     }
 
@@ -24,8 +24,8 @@ public class TDateAdjIntvl {
         return isBusDays;
     }
 
-    public String getHolidayFile() {
-        return holidayFile;
+    public String getCalendar() {
+        return calendar;
     }
 
     public TBadDayConvention getBadDayConvention() {

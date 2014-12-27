@@ -1,6 +1,5 @@
 package com.anand.analytics.isdamodel.date;
 
-import com.anand.analytics.isdamodel.context.XlServerSpringUtils;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 
 import java.util.Map;
@@ -15,11 +14,11 @@ public class HolidayCalendarFactory {
         this.holidayCalendars = holidayCalendars;
     }
 
-    public HolidayCalendar getCalendar(String calendarName) {
+    public HolidayCalendar getCalendar(String calendarName) throws CdsLibraryException {
         if (holidayCalendars.containsKey(calendarName))
             return holidayCalendars.get(calendarName);
         else
-            return (HolidayCalendar) XlServerSpringUtils.getBeanByName("noHolidaysCalendar");
+            throw new CdsLibraryException("Invalid calendar name");
 
     }
 }

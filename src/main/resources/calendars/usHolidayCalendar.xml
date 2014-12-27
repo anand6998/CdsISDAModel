@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd"
+        >
+
+    <bean id="usHolidayList" class="java.util.ArrayList">
+        <constructor-arg>
+            <list>
+                <!-- 2014 -->
+                <value>2014-01-01</value>
+                <value>2014-01-20</value>
+                <value>2014-02-17</value>
+                <value>2014-04-18</value>
+                <value>2014-05-26</value>
+                <value>2014-07-04</value>
+                <value>2014-09-01</value>
+                <value>2014-10-13</value>
+                <value>2014-11-11</value>
+                <value>2014-11-27</value>
+                <value>2014-12-25</value>
+                <!-- 2015 -->
+                <value>2015-01-01</value>
+                <value>2015-01-20</value>
+                <value>2015-02-17</value>
+                <value>2015-04-18</value>
+                <value>2015-05-26</value>
+                <value>2015-07-04</value>
+                <value>2015-09-01</value>
+                <value>2015-10-13</value>
+                <value>2015-11-11</value>
+                <value>2015-11-27</value>
+                <value>2015-12-25</value>
+            </list>
+        </constructor-arg>
+    </bean>
+
+    <import resource="holidayContextCommon.xml"/>
+
+    <bean id="usWeekendDaysList" class="java.util.ArrayList">
+        <constructor-arg>
+            <list>
+                <ref bean="saturday"/>
+                <ref bean="sunday"/>
+
+            </list>
+        </constructor-arg>
+    </bean>
+
+    <util:constant id="sunday" static-field="org.threeten.bp.DayOfWeek.SUNDAY"/>
+    <util:constant id="saturday" static-field="org.threeten.bp.DayOfWeek.SATURDAY"/>
+
+
+    <bean id="usHolidaysCalendar" class="com.anand.analytics.isdamodel.date.DefaultHolidayCalendar">
+        <constructor-arg index="0" ref="usHolidayList"/>
+        <constructor-arg index="1" ref="usWeekendDaysList"/>
+        <constructor-arg index="2" ref="holidayListReader"/>
+        <constructor-arg index="3" ref="holidayCalendarFunctions"/>
+        <constructor-arg index="4" value="USD"/>
+    </bean>
+
+</beans>

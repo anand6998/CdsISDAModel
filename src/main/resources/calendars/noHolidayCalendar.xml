@@ -4,7 +4,7 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
 http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd"
         >
-
+    <import resource="holidayContextCommon.xml"/>
     <bean id="noHolidayList" class="java.util.ArrayList"/>
 
     <bean id="defaultWeekendDaysList" class="java.util.ArrayList">
@@ -17,12 +17,12 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.spri
         </constructor-arg>
     </bean>
 
-    <util:constant id="sunday" static-field="org.threeten.bp.DayOfWeek.SUNDAY"/>
-    <util:constant id="saturday" static-field="org.threeten.bp.DayOfWeek.SATURDAY"/>
-
-    <bean id="noHolidaysCalendar" class="com.anand.analytics.isdamodel.date.NoHolidayCalendar">
+    <bean id="noHolidaysCalendar" class="com.anand.analytics.isdamodel.date.DefaultHolidayCalendar">
         <constructor-arg index="0" ref="noHolidayList"/>
         <constructor-arg index="1" ref="defaultWeekendDaysList"/>
+        <constructor-arg index="2" ref="holidayListReader"/>
+        <constructor-arg index="3" ref="holidayCalendarFunctions"/>
+        <constructor-arg index="4" value="None"/>
     </bean>
 
 </beans>

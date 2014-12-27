@@ -1,15 +1,8 @@
 package com.anand.analytics.isdamodel.cds;
 
 
-import com.anand.analytics.isdamodel.utils.CdsUtils;
-import com.anand.analytics.isdamodel.utils.DayCount;
-import com.anand.analytics.isdamodel.utils.DoubleHolder;
-import com.anand.analytics.isdamodel.utils.IntHolder;
-import com.anand.analytics.isdamodel.utils.PeriodType;
-import com.anand.analytics.isdamodel.utils.ReturnStatus;
-import com.anand.analytics.isdamodel.utils.TBadDayConvention;
-import com.anand.analytics.isdamodel.utils.TDateInterval;
-import com.anand.analytics.isdamodel.utils.TStubMethod;
+import com.anand.analytics.isdamodel.exception.CdsLibraryException;
+import com.anand.analytics.isdamodel.utils.*;
 import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.temporal.ChronoUnit;
@@ -88,7 +81,7 @@ public class TFeeLeg {
             DayCount paymentDcc,
             TBadDayConvention badDayConv,
             String calendar,
-            boolean protectStart) {
+            boolean protectStart) throws CdsLibraryException {
         TDateInterval ivl3M = new TDateInterval(3, PeriodType.M, 0);
         TDateList dl;
 
@@ -122,14 +115,18 @@ public class TFeeLeg {
         LocalDate prevDateAdj = prevDate; /*first date is not bad day adjusted*/
 
         for (int i = 0; i < nbDates; i++) {
-            LocalDate nextDate = dl.dateArray[i + 1];
-            LocalDate nextDateAdj = adjustedBusinessDay(nextDate, badDayConv, calendar);
+            final LocalDate nextDate = dl.dateArray[i + 1];
+            final DateHolder nextDateAdj = new DateHolder();
+
+            if (adjustedBusinessDay(nextDate, badDayConv, calendar, nextDateAdj).equals(ReturnStatus.FAILURE)) {
+                throw new CdsLibraryException("Error calculating next adjusted business day");
+            }
             this.accStartDates[i] = prevDateAdj;
-            this.accEndDates[i] = nextDateAdj;
-            this.payDates[i] = nextDateAdj;
+            this.accEndDates[i] = nextDateAdj.get();
+            this.payDates[i] = nextDateAdj.get();
 
             prevDate = nextDate;
-            prevDateAdj = nextDateAdj;
+            prevDateAdj = nextDateAdj.get();
         }
 
         this.notional = notional;

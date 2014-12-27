@@ -1,76 +1,57 @@
 package com.anand.analytics.isdamodel.date;
 
-import org.boris.xlloop.util.Day;
+import com.anand.analytics.isdamodel.utils.TBadDayConvention;
+import org.springframework.cglib.core.Local;
 import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.LocalDate;
 
-import java.util.ArrayList;
 import java.util.List;
-
-import static com.anand.analytics.isdamodel.utils.CdsFunctions.ABS;
-import static com.anand.analytics.isdamodel.utils.CdsFunctions.SIGN;
 
 /**
  * Created by anand on 12/26/14.
  */
-public abstract class DefaultHolidayCalendar implements HolidayCalendar {
+public class DefaultHolidayCalendar implements HolidayCalendar {
 
-    protected List<LocalDate> holidays = new ArrayList<LocalDate>();
-    protected List<DayOfWeek> weekendDays;
+    protected final List<LocalDate> holidays;
+    protected final List<DayOfWeek> weekendDays;
+    protected final HolidayListReader holidayListReader;
+    protected final HolidayCalendarFunctions holidayCalendarFunctions;
+    protected final String name;
 
-    protected DefaultHolidayCalendar(List<Day> holidayList, List<DayOfWeek> weekendDays) {
-
-        for (int i = 0; i < holidayList.size(); i++) {
-            Day day = holidayList.get(i);
-            holidays.add(LocalDate.of(day.getYear(), day.getMonth(), day.getDay()));
-        }
+    protected DefaultHolidayCalendar(List<String> holidayList, List<DayOfWeek> weekendDays, HolidayListReader reader,
+                                     HolidayCalendarFunctions functions, String name) {
+        this.holidayListReader = reader;
+        this.holidays = holidayListReader.read(holidayList);
         this.weekendDays = weekendDays;
+        this.holidayCalendarFunctions = functions;
+        this.name = name;
+    }
+
+    @Override
+    public List<LocalDate> getHolidays() {
+        return holidays;
+    }
+
+    @Override
+    public List<DayOfWeek> getWeekendDays() {
+        return weekendDays;
     }
 
     @Override
     public LocalDate getNextBusinessDay(LocalDate input, int sign) {
-        LocalDate adjustedDate = input;
-        DayOfWeek dayOfWeek = adjustedDate.getDayOfWeek();
-
-        while (weekendDays.contains(dayOfWeek)|| holidays.contains(adjustedDate)) {
-            adjustedDate = adjustedDate.plusDays(sign);
-            dayOfWeek = adjustedDate.getDayOfWeek();
-        }
-
-        return adjustedDate;
+       return holidayCalendarFunctions.getNextBusinessDay(input, sign, weekendDays, holidays);
     }
 
-    public boolean isBusinessDay(LocalDate input) {
-        DayOfWeek dayOfWeek = input.getDayOfWeek();
-        if (weekendDays.contains(dayOfWeek) || holidays.contains(input))
-            return false;
-        return true;
-    }
 
-    public LocalDate addBusinessDay(LocalDate input, int sign) {
-        LocalDate tmp = input.plusDays(sign);
-        while(!isBusinessDay(tmp)) {
-            tmp = tmp.plusDays(sign);
-        }
-        return tmp;
+    @Override
+    public LocalDate addBusinessDays(LocalDate input, long numBusDays) {
+        return holidayCalendarFunctions.addBusinessDays(input, numBusDays, weekendDays, holidays);
     }
 
     @Override
-    public LocalDate addBusinessDays(LocalDate input, int numBusDays) {
-        int intervalSign = SIGN(numBusDays);
-        int numBusDaysLeft = ABS(numBusDays);
-
-        if (weekendDays.size() == 0 && holidays.size() == 0) {
-            //No adjustments at all
-            LocalDate result = input.plusDays(intervalSign * numBusDaysLeft);
-            return result;
-        } else {
-            LocalDate tmp = input;
-            for (int i = 0; i < numBusDays; i++) {
-                tmp = addBusinessDay(tmp, intervalSign);
-            }
-
-            return tmp;
-        }
+    public LocalDate getNextBusinessDay(LocalDate input, TBadDayConvention badDayConvention) {
+        return holidayCalendarFunctions.getNextBusinessDay(input, badDayConvention, weekendDays, holidays);
     }
+
+
 }

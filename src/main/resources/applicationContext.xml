@@ -24,9 +24,19 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.spri
         <constructor-arg index="0" ref="serviceContext"/>
     </bean>
 
-    <import resource="noHolidayCalendar.xml"/>
-    <import resource="usHolidayCalendar.xml"/>
-    <bean id="holidayCalendarMap" class="java.util.HashMap">
+    <import resource="calendars/noHolidayCalendar.xml"/>
+    <import resource="calendars/usHolidayCalendar.xml"/>
+    <import resource="calendars/uaeHolidayCalendar.xml"/>
+
+    <bean id="uaeUsdMultiHolidayCalendar" class="com.anand.analytics.isdamodel.date.MultiHolidayCalendar">
+        <constructor-arg index="0">
+            <list>
+                <ref bean="usHolidaysCalendar"/>
+                <ref bean="uaeHolidaysCalendar"/>
+            </list>
+        </constructor-arg>
+        <constructor-arg index="1" ref="holidayListReader"/>
+        <constructor-arg index="2" ref="holidayCalendarFunctions"/>
 
     </bean>
     <bean id="holidayCalendarFactory" class="com.anand.analytics.isdamodel.date.HolidayCalendarFactory">
@@ -34,6 +44,7 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.spri
             <map key-type="java.lang.String" value-type="com.anand.analytics.isdamodel.date.HolidayCalendar">
                 <entry key="None" value-ref="noHolidaysCalendar"/>
                 <entry key="USD" value-ref="usHolidaysCalendar"/>
+                <entry key="USD,UAE" value-ref="uaeUsdMultiHolidayCalendar"/>
             </map>
         </constructor-arg>
     </bean>
