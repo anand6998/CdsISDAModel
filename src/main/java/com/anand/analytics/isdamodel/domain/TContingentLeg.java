@@ -1,14 +1,10 @@
-package com.anand.analytics.isdamodel.cds;
+package com.anand.analytics.isdamodel.domain;
 
 
 import com.anand.analytics.isdamodel.utils.DoubleHolder;
 import com.anand.analytics.isdamodel.utils.ReturnStatus;
-import com.anand.analytics.isdamodel.utils.TProtPayConv;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.temporal.ChronoUnit;
-
-import static com.anand.analytics.isdamodel.cds.TRateFunctions.cdsForwardZeroPrice;
-import static com.anand.analytics.isdamodel.cds.TRateFunctions.cdsZeroPrice;
 
 /**
  * Created by Anand on 10/21/2014.
@@ -80,8 +76,8 @@ public class TContingentLeg {
         assert (spreadCurve != null);
         assert (result != null);
 
-        assert (cdsZeroPrice(spreadCurve, endDate) > CDS_LOG0_THRESHOLD);
-        assert (cdsZeroPrice(discountCurve, endDate) > CDS_LOG0_THRESHOLD);
+        assert (TRateFunctions.cdsZeroPrice(spreadCurve, endDate) > CDS_LOG0_THRESHOLD);
+        assert (TRateFunctions.cdsZeroPrice(discountCurve, endDate) > CDS_LOG0_THRESHOLD);
 
         offset = protectStart ? 1 : 0;
         LocalDate startDate = max(this.startDate, stepInDate.minusDays(offset));
@@ -122,7 +118,7 @@ public class TContingentLeg {
 
         }
 
-        valueDatePv = cdsForwardZeroPrice(discountCurve, today, valueDate);
+        valueDatePv = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, valueDate);
 
         result.set(myPv / valueDatePv);
         return ReturnStatus.SUCCESS;
@@ -160,8 +156,8 @@ public class TContingentLeg {
              assuming flat forwards on each part of the integration, this is an
              exact integral
              */
-            s1 = cdsForwardZeroPrice(spreadCurve, today, startDate);
-            df1 = cdsForwardZeroPrice(discountCurve, today, max(today, startDate));
+            s1 = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, startDate);
+            df1 = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, max(today, startDate));
 
             loss = 1. - recoveryRate;
 
@@ -173,8 +169,8 @@ public class TContingentLeg {
 
                 s0 = s1;
                 df0 = df1;
-                s1 = cdsForwardZeroPrice(spreadCurve, today, tl.dateArray[i]);
-                df1 = cdsForwardZeroPrice(discountCurve, today, tl.dateArray[i]);
+                s1 = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, tl.dateArray[i]);
+                df1 = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, tl.dateArray[i]);
                 t = (double) (tl.dateArray[i - 1].periodUntil(tl.dateArray[i], ChronoUnit.DAYS)) / 365.;
 
                 /*************************Markit Proposed Fix***************************************************
@@ -245,9 +241,9 @@ public class TContingentLeg {
             pv.set(0);
 
         } else {
-            s0 = cdsForwardZeroPrice(spreadCurve, today, startDate);
-            s1 = cdsForwardZeroPrice(spreadCurve, today, endDate);
-            df = cdsForwardZeroPrice(discountCurve, today, payDate);
+            s0 = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, startDate);
+            s1 = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, endDate);
+            df = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, payDate);
             loss = 1. - recoveryRate;
             pv.set((s0 - s1) * df * loss);
         }

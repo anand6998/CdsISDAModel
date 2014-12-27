@@ -1,4 +1,4 @@
-package com.anand.analytics.isdamodel.cds;
+package com.anand.analytics.isdamodel.domain;
 
 
 import com.anand.analytics.isdamodel.utils.DayCount;
@@ -7,8 +7,6 @@ import com.anand.analytics.isdamodel.utils.DoubleHolder;
 import com.anand.analytics.isdamodel.utils.ReturnStatus;
 import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
-
-import static com.anand.analytics.isdamodel.cds.TDateFunctions.cdsDayCountFraction;
 
 
 /**
@@ -77,7 +75,7 @@ public class TCurve {
         switch (rateBasis) {
             case SIMPLE_BASIS:
             case DISCOUNT_RATE: {
-                status = cdsDayCountFraction(startDate, endDate, rateDayCountConv, yearFraction);
+                status = TDateFunctions.cdsDayCountFraction(startDate, endDate, rateDayCountConv, yearFraction);
                 if (status.equals(ReturnStatus.FAILURE)) {
                     logger.error("TCurve.cdsRateValid()::Error in calculating day count fraction");
                     return ReturnStatus.FAILURE;
@@ -110,5 +108,9 @@ public class TCurve {
                     return ReturnStatus.FAILURE;
         }
         return ReturnStatus.SUCCESS;
+    }
+
+    public void setBasis(DayCountBasis basis) {
+        this.basis = basis;
     }
 }

@@ -1,4 +1,4 @@
-package com.anand.analytics.isdamodel.cds;
+package com.anand.analytics.isdamodel.domain;
 
 
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
@@ -14,9 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.anand.analytics.isdamodel.cds.TDateFunctions.*;
-import static com.anand.analytics.isdamodel.cds.TRateFunctions.cdsForwardZeroPrice;
-import static com.anand.analytics.isdamodel.cds.TRateFunctions.cdsZeroPrice;
+import static com.anand.analytics.isdamodel.domain.TDateFunctions.*;
 
 //TODO - move this class
 class TMonthDayYear {
@@ -210,10 +208,10 @@ public class TFeeLeg {
             LocalDate startDate = accStartDates[0];
             LocalDate endDate = accEndDates[nbDates - 1];
 
-            double rate = cdsZeroPrice(spreadCurve, endDate);
+            double rate = TRateFunctions.cdsZeroPrice(spreadCurve, endDate);
             assert (rate > CDS_LOG0_THRESHOLD);
 
-            rate = cdsZeroPrice(discountCurve, endDate);
+            rate = TRateFunctions.cdsZeroPrice(discountCurve, endDate);
             assert (rate > CDS_LOG0_THRESHOLD);
 
             tl = cdsRiskyTimeLine(startDate, endDate, discountCurve, spreadCurve);
@@ -246,7 +244,7 @@ public class TFeeLeg {
             myPv += thisPV.get();
         }
 
-        valueDatePv = cdsForwardZeroPrice(discountCurve, today, valueDate);
+        valueDatePv = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, valueDate);
         result.set(myPv / valueDatePv);
 
         if (payAccruedAtStart) /* clean price */ {
@@ -349,8 +347,8 @@ public class TFeeLeg {
 
                 cdsDayCountFraction(accStartDate, accEndDate, accruedDCC, accrualTime);
                 amount = notional * couponRate * accrualTime.get();
-                survival = cdsForwardZeroPrice(spreadCurve, today, accEndDate.plusDays(obsOffset));
-                discount = cdsForwardZeroPrice(discountCurve, today, payDate);
+                survival = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, accEndDate.plusDays(obsOffset));
+                discount = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, payDate);
 
                 myPv = amount * survival * discount;
             }
@@ -367,8 +365,8 @@ public class TFeeLeg {
 
 
                 amount = notional * couponRate * accrualTime.get();
-                survival = cdsForwardZeroPrice(spreadCurve, today, accEndDate.plusDays(obsOffset));
-                discount = cdsForwardZeroPrice(discountCurve, today, payDate);
+                survival = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, accEndDate.plusDays(obsOffset));
+                discount = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, payDate);
                 myPv = amount * survival * discount;
 
                 /**
@@ -445,8 +443,8 @@ public class TFeeLeg {
         subStartDate = stepinDate.isAfter(startDate) ? stepinDate : startDate;
         t = (double) (startDate.periodUntil(endDate, ChronoUnit.DAYS)) / 365.;
         accRate = amount / t;
-        s0 = cdsForwardZeroPrice(spreadCurve, today, subStartDate);
-        df0 = cdsForwardZeroPrice(discountCurve, today, today.isAfter(subStartDate) ? today : subStartDate);
+        s0 = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, subStartDate);
+        df0 = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, today.isAfter(subStartDate) ? today : subStartDate);
 
         for (int i = 1; i < tl.fNumItems; i++) {
             double lambda, fwdRate, thisPv = 0;
@@ -455,8 +453,8 @@ public class TFeeLeg {
             if (tl.dateArray[i].isBefore(stepinDate) || tl.dateArray[i].isEqual(stepinDate))
                 continue;
 
-            s1 = cdsForwardZeroPrice(spreadCurve, today, tl.dateArray[i]);
-            df1 = cdsForwardZeroPrice(discountCurve, today, tl.dateArray[i]);
+            s1 = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, tl.dateArray[i]);
+            df1 = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, tl.dateArray[i]);
 
             t0 = (startDate.periodUntil(subStartDate, ChronoUnit.DAYS) + 0.5) / 365.;
             t1 = (startDate.periodUntil(tl.dateArray[i], ChronoUnit.DAYS) + 0.5) / 365.;

@@ -1,22 +1,13 @@
 package com.anand.analytics.isdamodel.cds;
 
 
-import com.anand.analytics.isdamodel.utils.DayCount;
-import com.anand.analytics.isdamodel.utils.DayCountBasis;
-import com.anand.analytics.isdamodel.utils.DoubleHolder;
-import com.anand.analytics.isdamodel.utils.PeriodType;
-import com.anand.analytics.isdamodel.utils.ReturnStatus;
-import com.anand.analytics.isdamodel.utils.RootFindBrent;
-import com.anand.analytics.isdamodel.utils.SolvableFunction;
-import com.anand.analytics.isdamodel.utils.TBadDayConvention;
-import com.anand.analytics.isdamodel.utils.TDateInterval;
-import com.anand.analytics.isdamodel.utils.TProtPayConv;
-import com.anand.analytics.isdamodel.utils.TStubMethod;
+import com.anand.analytics.isdamodel.domain.*;
+import com.anand.analytics.isdamodel.utils.*;
 import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
 
-import static com.anand.analytics.isdamodel.cds.TRateFunctions.cdsConvertCompoundRate;
-import static com.anand.analytics.isdamodel.cds.TRateFunctions.cdsForwardZeroPrice;
+import static com.anand.analytics.isdamodel.domain.TRateFunctions.cdsConvertCompoundRate;
+import static com.anand.analytics.isdamodel.domain.TRateFunctions.cdsForwardZeroPrice;
 
 /**
  * Created by Anand on 10/21/2014.
@@ -197,7 +188,7 @@ public class CdsBootstrap {
                 throw new Exception("CdsBootstrap.bootstrap()::Error finding root");
             }
 
-            cdsCurve.rates[i] = spread.get();
+            cdsCurve.getRates()[i] = spread.get();
 
             cl = null;
             fl = null;
@@ -218,22 +209,22 @@ public class CdsBootstrap {
     }
 
     private static void creditCurveConvertRateType(TCurve curve, DayCountBasis dayCountBasis) {
-        if (dayCountBasis.equals(curve.basis)) {
+        if (dayCountBasis.equals(curve.getBasis())) {
             return;
         } else {
-            for (int i = 0; i < curve.dates.length; i++) {
+            for (int i = 0; i < curve.getDates().length; i++) {
                 DoubleHolder convertedRate = new DoubleHolder();
-                cdsConvertCompoundRate(curve.rates[i],
-                        curve.basis,
-                        curve.dayCountConv,
+                cdsConvertCompoundRate(curve.getRates()[i],
+                        curve.getBasis(),
+                        curve.getDayCountConv(),
                         dayCountBasis,
-                        curve.dayCountConv,
+                        curve.getDayCountConv(),
                         convertedRate);
-                curve.rates[i] = convertedRate.get();
+                curve.getRates()[i] = convertedRate.get();
 
             }
 
-            curve.basis = dayCountBasis;
+            curve.setBasis(dayCountBasis);
         }
     }
 }
@@ -250,7 +241,7 @@ class CdsBootStrapFunction implements SolvableFunction {
         double recoveryRate = context.recoveryRate;
         TContingentLeg cl = context.contigentLeg;
         TFeeLeg fl = context.feeLeg;
-        LocalDate cdsBaseDate = cdsCurve.baseDate;
+        LocalDate cdsBaseDate = cdsCurve.getBaseDate();
         LocalDate stepInDate = context.stepinDate;
         LocalDate cashSettleDate = context.cashSettleDate;
         boolean isPriceClean = true;
@@ -258,7 +249,7 @@ class CdsBootStrapFunction implements SolvableFunction {
         double pvC; /* PV of contingent leg */
         double pvF; /* PV of fee leg */
 
-        cdsCurve.rates[i] = cleanSpread;
+        cdsCurve.getRates()[i] = cleanSpread;
 
         DoubleHolder result = new DoubleHolder();
 

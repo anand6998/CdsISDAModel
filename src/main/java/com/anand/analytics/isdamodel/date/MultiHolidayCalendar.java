@@ -1,6 +1,7 @@
 package com.anand.analytics.isdamodel.date;
 
-import com.anand.analytics.isdamodel.utils.TBadDayConvention;
+import com.anand.analytics.isdamodel.domain.TBadDayConvention;
+import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.LocalDate;
 
@@ -66,7 +67,7 @@ public class MultiHolidayCalendar implements HolidayCalendar {
     }
 
     @Override
-    public LocalDate getNextBusinessDay(LocalDate input, TBadDayConvention badDayConvention) {
+    public LocalDate getNextBusinessDay(LocalDate input, TBadDayConvention badDayConvention) throws CdsLibraryException {
         return holidayCalendarFunctions.getNextBusinessDay(input, badDayConvention, weekendDays, holidays);
     }
 }

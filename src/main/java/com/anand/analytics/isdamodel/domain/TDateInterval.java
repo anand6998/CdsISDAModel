@@ -1,5 +1,8 @@
-package com.anand.analytics.isdamodel.utils;
+package com.anand.analytics.isdamodel.domain;
 
+import com.anand.analytics.isdamodel.utils.DoubleHolder;
+import com.anand.analytics.isdamodel.utils.PeriodType;
+import com.anand.analytics.isdamodel.utils.ReturnStatus;
 import org.apache.log4j.Logger;
 import static com.anand.analytics.isdamodel.utils.CdsDateConstants.*;
 

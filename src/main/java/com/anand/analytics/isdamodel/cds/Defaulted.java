@@ -1,13 +1,11 @@
 package com.anand.analytics.isdamodel.cds;
 
 
+import com.anand.analytics.isdamodel.domain.*;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.utils.DayCount;
 import com.anand.analytics.isdamodel.utils.DoubleHolder;
 import com.anand.analytics.isdamodel.utils.ReturnStatus;
-import com.anand.analytics.isdamodel.utils.TBadDayConvention;
-import com.anand.analytics.isdamodel.utils.TDateInterval;
-import com.anand.analytics.isdamodel.utils.TStubMethod;
 import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.temporal.ChronoUnit;
@@ -45,8 +43,8 @@ public class Defaulted {
 
             int i = 0;
             while (i < feeLeg.getNbDates()) {
-                LocalDate accrualStartDate = feeLeg.accStartDates[i];
-                LocalDate accrualEndDate   = feeLeg.accEndDates[i];
+                LocalDate accrualStartDate = feeLeg.getAccStartDates()[i];
+                LocalDate accrualEndDate   = feeLeg.getAccEndDates()[i];
 
                 if ((accrualStartDate.isBefore(tradeDate) || accrualStartDate.isEqual(tradeDate))
                         && (tradeDate.isBefore(accrualEndDate))) {

@@ -1,6 +1,7 @@
 package com.anand.analytics.isdamodel.date;
 
-import com.anand.analytics.isdamodel.utils.TBadDayConvention;
+import com.anand.analytics.isdamodel.exception.CdsLibraryException;
+import com.anand.analytics.isdamodel.domain.TBadDayConvention;
 import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.LocalDate;
 
@@ -59,8 +60,36 @@ public class HolidayCalendarFunctions {
         }
     }
 
-    public LocalDate getNextBusinessDay(LocalDate input, TBadDayConvention badDayConvention, List<DayOfWeek> weekendDays, List<LocalDate> holidays) {
-        return null;
+    public LocalDate getNextBusinessDay(LocalDate input, TBadDayConvention badDayConvention, List<DayOfWeek> weekendDays, List<LocalDate> holidays)
+            throws CdsLibraryException {
+        LocalDate retDate = input;
+        int intervalSign = 1;
+        switch(badDayConvention) {
+            case NONE:
+                break;
+            case FOLLOW:
+                intervalSign = 1;
+                retDate = getNextBusinessDay(input, intervalSign, weekendDays, holidays);
+                break;
+            case PREVIOUS:
+                intervalSign = -1;
+                retDate = getNextBusinessDay(input, intervalSign, weekendDays, holidays);
+                break;
+            case MODIFIED:
+                intervalSign = 1;
+                retDate = getNextBusinessDay(input, intervalSign, weekendDays, holidays);
+
+                if (input.getMonthValue() != retDate.getMonthValue()) {
+                    retDate = getNextBusinessDay(input, -intervalSign, weekendDays, holidays);
+                }
+
+                break;
+            default:
+                throw new CdsLibraryException("Invalid badDayConvention");
+
+        }
+
+        return retDate;
     }
 
 

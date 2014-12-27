@@ -4,23 +4,14 @@ package com.anand.analytics.isdamodel.cds;
  * Created by Anand on 12/24/2014.
  */
 
-import com.anand.analytics.isdamodel.utils.CdsUtils;
-import com.anand.analytics.isdamodel.utils.DayCount;
-import com.anand.analytics.isdamodel.utils.DayCountBasis;
-import com.anand.analytics.isdamodel.utils.DoubleHolder;
-import com.anand.analytics.isdamodel.utils.IntHolder;
-import com.anand.analytics.isdamodel.utils.PeriodType;
-import com.anand.analytics.isdamodel.utils.ReturnStatus;
-import com.anand.analytics.isdamodel.utils.TBadDayConvention;
-import com.anand.analytics.isdamodel.utils.TDateInterval;
-import com.anand.analytics.isdamodel.utils.TProtPayConv;
-import com.anand.analytics.isdamodel.utils.TStubMethod;
+import com.anand.analytics.isdamodel.domain.*;
+import com.anand.analytics.isdamodel.utils.*;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Test;
 import org.threeten.bp.LocalDate;
 
-import static com.anand.analytics.isdamodel.cds.TDateFunctions.cdsDayCountFraction;
+import static com.anand.analytics.isdamodel.domain.TDateFunctions.cdsDayCountFraction;
 
 
 /**
@@ -425,7 +416,7 @@ public class TestCdsFunctions {
     @Test
     public void testBinarySearchLong() throws Exception {
         TCurve tCurve = setUpTCurve();
-        LocalDate[] xArray = tCurve.dates;
+        LocalDate[] xArray = tCurve.getDates();
 
         LocalDate xDesired = LocalDate.of(2019, 6, 20);
         IntHolder exact = new IntHolder(0);
