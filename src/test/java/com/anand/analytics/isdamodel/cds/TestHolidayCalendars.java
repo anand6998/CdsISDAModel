@@ -3,7 +3,6 @@ package com.anand.analytics.isdamodel.cds;
 import com.anand.analytics.isdamodel.context.XlServerSpringUtils;
 import com.anand.analytics.isdamodel.date.HolidayCalendar;
 import com.anand.analytics.isdamodel.date.HolidayCalendarFactory;
-import com.anand.analytics.isdamodel.date.MultiHolidayCalendar;
 import junit.framework.Assert;
 import org.junit.Test;
 import org.threeten.bp.LocalDate;
