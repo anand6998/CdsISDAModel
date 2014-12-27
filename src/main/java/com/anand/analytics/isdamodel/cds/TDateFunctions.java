@@ -398,9 +398,6 @@ public class TDateFunctions {
         if (method.equals(TBadDayConvention.NONE))
             return date;
 
-        List<LocalDate> holidayList = new ArrayList<LocalDate>();
-        //holidayList = loadHolidaysFromFile(calendar);
-
         HolidayCalendarFactory holidayCalendarFactory = (HolidayCalendarFactory ) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
         HolidayCalendar holidayCalendar = holidayCalendarFactory.getCalendar(calendar);
 
