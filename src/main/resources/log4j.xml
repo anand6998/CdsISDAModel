@@ -9,6 +9,9 @@
         </layout>
     </appender>
 
+    <category name="org.springframework">
+        <priority value="INFO"/>
+    </category>
     <root>
         <priority value ="debug" />
         <appender-ref ref="console" />

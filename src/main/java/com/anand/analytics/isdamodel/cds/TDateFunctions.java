@@ -1,15 +1,10 @@
 package com.anand.analytics.isdamodel.cds;
 
 
-import com.anand.analytics.isdamodel.utils.BooleanHolder;
-import com.anand.analytics.isdamodel.utils.DateHolder;
-import com.anand.analytics.isdamodel.utils.DayCount;
-import com.anand.analytics.isdamodel.utils.DoubleHolder;
-import com.anand.analytics.isdamodel.utils.LongHolder;
-import com.anand.analytics.isdamodel.utils.PeriodType;
-import com.anand.analytics.isdamodel.utils.ReturnStatus;
-import com.anand.analytics.isdamodel.utils.TBadDayConvention;
-import com.anand.analytics.isdamodel.utils.TDateInterval;
+import com.anand.analytics.isdamodel.context.XlServerSpringUtils;
+import com.anand.analytics.isdamodel.date.HolidayCalendar;
+import com.anand.analytics.isdamodel.date.HolidayCalendarFactory;
+import com.anand.analytics.isdamodel.utils.*;
 import org.apache.log4j.Logger;
 import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.LocalDate;
@@ -399,12 +394,15 @@ public class TDateFunctions {
         mdy.isLeap = startDate.isLeapYear();
     }
 
-    public static LocalDate adjustedBusinessDay(LocalDate date, TBadDayConvention method, String holidayFile) {
+    public static LocalDate adjustedBusinessDay(LocalDate date, TBadDayConvention method, String calendar) {
         if (method.equals(TBadDayConvention.NONE))
             return date;
 
         List<LocalDate> holidayList = new ArrayList<LocalDate>();
-        holidayList = loadHolidaysFromFile(holidayFile);
+        //holidayList = loadHolidaysFromFile(calendar);
+
+        HolidayCalendarFactory holidayCalendarFactory = (HolidayCalendarFactory ) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
+        HolidayCalendar holidayCalendar = holidayCalendarFactory.getCalendar(calendar);
 
         LocalDate retDate = date;
         int intervalSign = 1;
@@ -415,11 +413,13 @@ public class TDateFunctions {
                 break;
             case FOLLOW:
                 //intervalSign += 1;
-                retDate = nextBusinessDay(date, intervalSign, holidayList);
+                //retDate = nextBusinessDay(date, intervalSign, holidayList);
+                retDate = holidayCalendar.getNextBusinessDay(date, intervalSign);
                 break;
             case PREVIOUS:
                 intervalSign -= 1;
-                retDate = nextBusinessDay(date, intervalSign, holidayList);
+                //retDate = nextBusinessDay(date, intervalSign, holidayList);
+                retDate = holidayCalendar.getNextBusinessDay(date, intervalSign);
                 break;
             case MODIFIED:
                 /*
@@ -427,11 +427,11 @@ public class TDateFunctions {
                 ** month, then go backwards.
                 */
                 intervalSign = 1;
-                LocalDate nextDate = nextBusinessDay(date, intervalSign, holidayList);
+                LocalDate nextDate = holidayCalendar.getNextBusinessDay(date, intervalSign);
 
                 if (date.getMonth().getValue() != nextDate.getMonth().getValue()) {
                     //Go back
-                    nextDate = nextBusinessDay(nextDate, -intervalSign, holidayList);
+                    nextDate = holidayCalendar.getNextBusinessDay(nextDate, -intervalSign);
                 }
 
                 retDate = nextDate;
@@ -444,6 +444,7 @@ public class TDateFunctions {
 
     }
 
+    /*
     public static LocalDate nextBusinessDay(LocalDate date, int intervalSign, List<LocalDate> holidayList) {
         LocalDate adjustedDate = date;
         DayOfWeek dayOfWeek = adjustedDate.getDayOfWeek();
@@ -455,10 +456,38 @@ public class TDateFunctions {
 
         return adjustedDate;
     }
+    */
 
     public static List<LocalDate> loadHolidaysFromFile(String holidayFile) {
 
         //TODO - implement
         return new ArrayList<LocalDate>();
+    }
+
+    public static ReturnStatus cdsDtFwdAdj(LocalDate startDate,
+                              TDateAdjIntvl adjIvl,
+                              DoubleHolder result) {
+        switch  (adjIvl.getIsBusDays()) {
+            case BUSINESS:
+                /**
+                 * offset by business days
+                 */
+                if (adjIvl.getInterval().periodType.equals(PeriodType.D)) {
+
+                }
+        }
+
+        return ReturnStatus.FAILURE;
+    }
+
+    public static ReturnStatus cdsDateFromBusDayOffset(
+            LocalDate fromDate,
+            long offset,
+            String calendar,
+            DateHolder result
+    ) {
+        List<LocalDate> holidays = loadHolidaysFromFile(calendar);
+
+        return ReturnStatus.FAILURE;
     }
 }
