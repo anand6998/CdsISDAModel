@@ -285,6 +285,11 @@ public class TDateFunctions {
 
         }
 
+        if (negative == 1) {
+            long value = result.get() * -1;
+            result.set(value);
+        }
+
         return ReturnStatus.SUCCESS;
     }
 
