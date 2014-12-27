@@ -20,7 +20,6 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.spri
     <util:constant id="sunday" static-field="org.threeten.bp.DayOfWeek.SUNDAY"/>
     <util:constant id="saturday" static-field="org.threeten.bp.DayOfWeek.SATURDAY"/>
 
-
     <bean id="noHolidaysCalendar" class="com.anand.analytics.isdamodel.date.NoHolidayCalendar">
         <constructor-arg index="0" ref="noHolidayList"/>
         <constructor-arg index="1" ref="defaultWeekendDaysList"/>
