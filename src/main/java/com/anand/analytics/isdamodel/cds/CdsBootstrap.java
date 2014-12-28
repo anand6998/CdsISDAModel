@@ -37,8 +37,7 @@ public class CdsBootstrap {
      TBadDayConvention badDayConv,
      String calendar
     ) throws Exception {
-        String routine = "cdsCleanSpreadCurve";
-        TCurve out = null;
+
 
         LocalDate[] includeEndDates = null;
         double[] includeCouponRates = null;
@@ -82,7 +81,7 @@ public class CdsBootstrap {
             couponRates = includeCouponRates;
         }
 
-        out = CdsBootstrap.bootstrap(today,
+        final TCurve out = CdsBootstrap.bootstrap(today,
                 discountCurve,
                 startDate,
                 stepinDate,
