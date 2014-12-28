@@ -42,7 +42,7 @@ public class CdsBootstrap {
         LocalDate[] includeEndDates = null;
         double[] includeCouponRates = null;
 
-        TDateInterval ivl3M = new TDateInterval(3, PeriodType.M, 0);
+        final TDateInterval ivl3M = new TDateInterval(3, PeriodType.M, 0);
         if (couponInterval == null)
             couponInterval = ivl3M;
 
@@ -125,21 +125,13 @@ public class CdsBootstrap {
                                    TStubMethod stubType,           /* Stub type for fee leg                */
                                    TBadDayConvention badDayConv,
                                    String calendar) throws Exception {
-        String routine = "CdsBootstrap";
-        ReturnStatus status = ReturnStatus.FAILURE;
-
-        TCurve cdsCurve = null;
-
-        CdsBootstrapContext context = null;
-        TContingentLeg cl = null;
-        TFeeLeg fl = null;
-        double settleDiscount = 0.0;
-        boolean protectStart = true;
 
 
-        cdsCurve = new TCurve(today, endDates, couponRates, DayCountBasis.CONTINUOUS_BASIS, DayCount.ACT_365F);
+        final boolean protectStart = true;
 
-        context = new CdsBootstrapContext();
+
+        final TCurve cdsCurve = new TCurve(today, endDates, couponRates, DayCountBasis.CONTINUOUS_BASIS, DayCount.ACT_365F);
+        final CdsBootstrapContext context = new CdsBootstrapContext();
         context.discCurve = discountCurve;
         context.cdsCurve = cdsCurve;
         context.recoveryRate = recoveryRate;
@@ -147,14 +139,12 @@ public class CdsBootstrap {
         context.cashSettleDate = cashSettleDate;
 
         for (int i = 0; i < endDates.length; i++) {
-            double guess = 0;
-            DoubleHolder spread = new DoubleHolder();
 
-            guess = couponRates[i] / (1.0 - recoveryRate);
-
-            LocalDate maxDate = startDate.isAfter(today) ? startDate : today;
-            cl = new TContingentLeg(maxDate, endDates[i], 1.0, protectStart, TProtPayConv.PROT_PAY_DEF);
-            fl = new TFeeLeg(startDate,
+            final DoubleHolder spread = new DoubleHolder();
+            final double guess = couponRates[i] / (1.0 - recoveryRate);
+            final LocalDate maxDate = startDate.isAfter(today) ? startDate : today;
+            final TContingentLeg cl = new TContingentLeg(maxDate, endDates[i], 1.0, protectStart, TProtPayConv.PROT_PAY_DEF);
+            final TFeeLeg fl = new TFeeLeg(startDate,
                     endDates[i],
                     payAccOnDefault,
                     couponInterval,
@@ -170,7 +160,7 @@ public class CdsBootstrap {
             context.contigentLeg = cl;
             context.feeLeg = fl;
 
-            SolvableFunction function = new CdsBootStrapFunction();
+            final SolvableFunction function = new CdsBootStrapFunction();
             if (RootFindBrent.findRoot(function,
                     context, /* data */
                     0.0,    /* boundLo */
@@ -189,9 +179,6 @@ public class CdsBootstrap {
 
             cdsCurve.getRates()[i] = spread.get();
 
-            cl = null;
-            fl = null;
-
             /** check if forward hazard rate is negative */
             if (i > 0) {
                 double fwdPrice = cdsForwardZeroPrice(cdsCurve, endDates[i - 1], endDates[i]);
@@ -203,7 +190,6 @@ public class CdsBootstrap {
         }
 
         creditCurveConvertRateType(cdsCurve, DayCountBasis.ANNUAL_BASIS);
-
         return cdsCurve;
     }
 
