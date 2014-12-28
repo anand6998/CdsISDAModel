@@ -2,6 +2,7 @@ package com.anand.analytics.isdamodel.date;
 
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.domain.TBadDayConvention;
+import com.anand.analytics.isdamodel.money.Currency;
 import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.LocalDate;
 
@@ -16,15 +17,15 @@ public class DefaultHolidayCalendar implements HolidayCalendar {
     protected final List<DayOfWeek> weekendDays;
     protected final HolidayListReader holidayListReader;
     protected final HolidayCalendarFunctions holidayCalendarFunctions;
-    protected final String name;
+    protected final Currency currency;
 
     protected DefaultHolidayCalendar(List<String> holidayList, List<DayOfWeek> weekendDays, HolidayListReader reader,
-                                     HolidayCalendarFunctions functions, String name) {
+                                     HolidayCalendarFunctions functions, Currency ccy) {
         this.holidayListReader = reader;
         this.holidays = holidayListReader.read(holidayList);
         this.weekendDays = weekendDays;
         this.holidayCalendarFunctions = functions;
-        this.name = name;
+        this.currency = ccy;
     }
 
     @Override

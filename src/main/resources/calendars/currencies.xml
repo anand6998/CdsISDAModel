@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd"
+        >
+    <bean id="noCurrency" class="com.anand.analytics.isdamodel.money.Currency">
+        <constructor-arg index="0" value="None"/>
+        <constructor-arg index="1" value="None"/>
+        <constructor-arg index="2" value="None"/>
+        <constructor-arg index="3" value="-1"/>
+    </bean>
+
+    <bean id="uaeCurrency" class="com.anand.analytics.isdamodel.money.Currency">
+        <constructor-arg index="0" value="Dirham"/>
+        <constructor-arg index="1" value="AED"/>
+        <constructor-arg index="2" value="United Arab Emirates"/>
+        <constructor-arg index="3" value="784"/>
+    </bean>
+
+    <bean id="usCurrency" class="com.anand.analytics.isdamodel.money.Currency">
+        <constructor-arg index="0" value="US Dollar"/>
+        <constructor-arg index="1" value="USD"/>
+        <constructor-arg index="2" value="United States of America"/>
+        <constructor-arg index="3" value="840"/>
+    </bean>
+</beans>

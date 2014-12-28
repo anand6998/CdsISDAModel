@@ -4,6 +4,8 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
 http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd"
         >
+    <import resource="currencies.xml"/>
+    <import resource="holidayContextCommon.xml"/>
     <!--
     Jan 1	Wednesday	New Year's Day	National holiday
     Jan 13	Monday	Mouloud (The Prophet's Birthday)	National holiday
@@ -58,8 +60,6 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.spri
         </constructor-arg>
     </bean>
 
-    <import resource="holidayContextCommon.xml"/>
-
     <bean id="uaeWeekendDaysList" class="java.util.ArrayList">
         <constructor-arg>
             <list>
@@ -77,7 +77,7 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.spri
         <constructor-arg index="1" ref="uaeWeekendDaysList"/>
         <constructor-arg index="2" ref="holidayListReader"/>
         <constructor-arg index="3" ref="holidayCalendarFunctions"/>
-        <constructor-arg index="4" value="UAE"/>
+        <constructor-arg index="4" ref="uaeCurrency"/>
     </bean>
 
 </beans>

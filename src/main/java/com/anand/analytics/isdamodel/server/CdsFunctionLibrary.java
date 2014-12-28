@@ -4,6 +4,8 @@ package com.anand.analytics.isdamodel.server;
 import com.anand.analytics.isdamodel.cds.*;
 import com.anand.analytics.isdamodel.context.CdsCacheManager;
 import com.anand.analytics.isdamodel.context.XlServerSpringUtils;
+import com.anand.analytics.isdamodel.date.HolidayCalendar;
+import com.anand.analytics.isdamodel.date.HolidayCalendarFactory;
 import com.anand.analytics.isdamodel.domain.*;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.utils.*;
@@ -1001,13 +1003,17 @@ public class CdsFunctionLibrary {
             }
             final double floatFreq = result.get();
 
+            HolidayCalendarFactory holidayCalendarFactory = (HolidayCalendarFactory) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
+            HolidayCalendar holidayCalendar = holidayCalendarFactory.getCalendar(calendar);
+
             final LocalDate baseDate = valueDate;
             for (int i = 0; i < types.length; i++) {
                 if(types[i] == 'M') {
-                    /**
-                     * Untested logic - the example code never goes into this if condition
-                     */
+
                     if (baseDate.periodUntil(endDates[i], ChronoUnit.DAYS) <=3 ) {
+                        /**
+                         * Untested logic - the example code never goes into this if condition
+                         */
                         final TDateInterval tDateInterval = new TDateInterval(
                                 baseDate.periodUntil(endDates[i], ChronoUnit.DAYS),
                                 PeriodType.D,
@@ -1025,8 +1031,20 @@ public class CdsFunctionLibrary {
                          *
                          */
                         final int adjBusDays = (int) baseDate.periodUntil(endDates[i], ChronoUnit.DAYS);
-                        DateHolder returnValue = new DateHolder();
-                        TDateFunctions.cdsDateFwdAdj(baseDate, tDateAdjIntvl, returnValue);
+                        endDates[i] = holidayCalendar.addBusinessDays(endDates[i], adjBusDays);
+                    }
+
+                    if (baseDate.periodUntil(endDates[i], ChronoUnit.DAYS) <= 21) {
+                        /**
+                         * for less than or equal to 3 weeks
+                         * adjust to business day
+                         */
+                        endDates[i] = holidayCalendar.getNextBusinessDay(endDates[i], TBadDayConvention.FOLLOW);
+                    } else {
+                        /**
+                         * adjust to business day
+                         */
+                        endDates[i] = holidayCalendar.getNextBusinessDay(endDates[i], TBadDayConvention.MODIFIED);
                     }
                 }
             }

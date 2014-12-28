@@ -24,9 +24,7 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.spri
         <constructor-arg index="0" ref="serviceContext"/>
     </bean>
 
-    <import resource="calendars/noHolidayCalendar.xml"/>
-    <import resource="calendars/usHolidayCalendar.xml"/>
-    <import resource="calendars/uaeHolidayCalendar.xml"/>
+    <import resource="calendars/common-imports.xml"/>
 
     <bean id="uaeUsdMultiHolidayCalendar" class="com.anand.analytics.isdamodel.date.MultiHolidayCalendar">
         <constructor-arg index="0">

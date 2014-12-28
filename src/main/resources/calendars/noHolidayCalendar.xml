@@ -4,6 +4,7 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
 http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd"
         >
+    <import resource="currencies.xml"/>
     <import resource="holidayContextCommon.xml"/>
     <bean id="noHolidayList" class="java.util.ArrayList"/>
 
@@ -12,7 +13,6 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.spri
             <list>
                 <ref bean="saturday"/>
                 <ref bean="sunday"/>
-
             </list>
         </constructor-arg>
     </bean>
@@ -22,7 +22,7 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.spri
         <constructor-arg index="1" ref="defaultWeekendDaysList"/>
         <constructor-arg index="2" ref="holidayListReader"/>
         <constructor-arg index="3" ref="holidayCalendarFunctions"/>
-        <constructor-arg index="4" value="None"/>
+        <constructor-arg index="4" ref="noCurrency"/>
     </bean>
 
 </beans>
