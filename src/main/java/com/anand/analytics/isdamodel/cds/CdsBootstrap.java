@@ -233,21 +233,21 @@ class CdsBootStrapFunction implements SolvableFunction {
     final static Logger logger = Logger.getLogger(CdsBootStrapFunction.class);
 
     public ReturnStatus eval(double cleanSpread, Object data, DoubleHolder y) {
-        CdsBootstrapContext context = (CdsBootstrapContext) data;
+        final CdsBootstrapContext context = (CdsBootstrapContext) data;
 
-        int i = context.i;
-        TCurve discountCurve = context.discCurve;
-        TCurve cdsCurve = context.cdsCurve;
-        double recoveryRate = context.recoveryRate;
-        TContingentLeg cl = context.contigentLeg;
-        TFeeLeg fl = context.feeLeg;
-        LocalDate cdsBaseDate = cdsCurve.getBaseDate();
-        LocalDate stepInDate = context.stepinDate;
-        LocalDate cashSettleDate = context.cashSettleDate;
-        boolean isPriceClean = true;
+        final int i = context.i;
+        final TCurve discountCurve = context.discCurve;
+        final TCurve cdsCurve = context.cdsCurve;
+        final double recoveryRate = context.recoveryRate;
+        final TContingentLeg cl = context.contigentLeg;
+        final TFeeLeg fl = context.feeLeg;
+        final LocalDate cdsBaseDate = cdsCurve.getBaseDate();
+        final LocalDate stepInDate = context.stepinDate;
+        final LocalDate cashSettleDate = context.cashSettleDate;
+        final boolean isPriceClean = true;
 
-        double pvC; /* PV of contingent leg */
-        double pvF; /* PV of fee leg */
+        final double pvC; /* PV of contingent leg */
+        final double pvF; /* PV of fee leg */
 
         cdsCurve.getRates()[i] = cleanSpread;
 
