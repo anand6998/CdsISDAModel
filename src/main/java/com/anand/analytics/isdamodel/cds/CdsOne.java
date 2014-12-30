@@ -3,6 +3,7 @@ package com.anand.analytics.isdamodel.cds;
 
 import com.anand.analytics.isdamodel.domain.*;
 import com.anand.analytics.isdamodel.utils.*;
+import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
 
@@ -128,9 +129,9 @@ public class CdsOne {
         boolean isPriceClean = true;
         boolean protectStart = true;
 
-        assert(parSpread != null);
-        assert(endDates.length >= 1);
-        assert(stepinDate.isAfter(today) || stepinDate.isEqual(today));
+        Validate.notNull(parSpread, "parSpread is null");
+        Validate.isTrue(endDates.length >= 1, "endDates.length < 1");
+        Validate.isTrue(stepinDate.isAfter(today) || stepinDate.isEqual(today), "stepinDate < today");
 
         for (int i = 0; i < endDates.length; i++) {
             DoubleHolder feeLegPV = new DoubleHolder();
@@ -276,8 +277,8 @@ public class CdsOne {
 
         boolean protectStart = true;
 
-        assert (price != null);
-        assert (stepinDate.isAfter(today) || stepinDate.isEqual(today));
+        Validate.notNull (price, "price is null");
+        Validate.isTrue (stepinDate.isAfter(today) || stepinDate.isEqual(today), "stepinDate < today");
 
         final LocalDate valueDate = settleDate;
         if (cdsCdsFeeLegPV(today,
