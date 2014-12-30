@@ -1,5 +1,6 @@
 package com.anand.analytics.isdamodel.utils;
 
+import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
 
@@ -63,7 +64,7 @@ public class CdsUtils {
         }
 
         if (count == 0) {
-            logger.error("%s; xarray is not in increasing order");
+            logger.error("xarray is not in increasing order");
             return ReturnStatus.FAILURE;
         }
 
@@ -75,9 +76,9 @@ public class CdsUtils {
          * to xDesired. But from the check at beginning we know X[N-1] <> xDesired
          */
 
-        assert (mid < xArray.length);
-        assert (xDesired.isAfter(xArray[mid]) || xDesired.isEqual(xArray[mid]));
-        assert (xDesired.isBefore(xArray[mid + 1]) || xDesired.isEqual(xArray[mid + 1]));
+        Validate.isTrue(mid < xArray.length, "mid >= xArray.lenght");
+        Validate.isTrue(xDesired.isAfter(xArray[mid]) || xDesired.isEqual(xArray[mid]), "xDesired < xArray[mid]");
+        Validate.isTrue(xDesired.isBefore(xArray[mid + 1]) || xDesired.isEqual(xArray[mid + 1]), "xDesired > xArray[mid + 1]");
 
         lo = mid;
         hi = mid + 1;
