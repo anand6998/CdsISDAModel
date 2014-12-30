@@ -10,6 +10,7 @@ import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.temporal.ChronoUnit;
 
+import static com.anand.analytics.isdamodel.utils.CdsFunctions.IS_ALMOST_ZERO;
 
 
 /**
@@ -21,6 +22,59 @@ public class TRateFunctions {
         double startPrice = cdsZeroPrice(zeroCurve, startDate);
         double maturityPrice = cdsZeroPrice(zeroCurve, maturityDate);
         return maturityPrice / startPrice;
+    }
+
+    public static ReturnStatus cdsRateToDiscountYearFrac(double rate, double yf, DayCountBasis rateBasis, DoubleHolder result) {
+        switch(rateBasis) {
+            case SIMPLE_BASIS:
+            {
+                double denom = 1.0 + rate * yf;
+                if (denom <= 0.0 || IS_ALMOST_ZERO(denom)) {
+                    logger.error("Invalid simple interest rate");
+                    return ReturnStatus.FAILURE;
+                }
+
+                result.set(1.0 / denom);
+            }
+            break;
+            case DISCOUNT_RATE: {
+                if (IS_ALMOST_ZERO(yf)) {
+                    result.set(1.0);
+
+                } else {
+                    double discount = 1.0 - rate * yf;
+                    if (discount <= 0.0) {
+                        logger.error("Invalid discount rate");
+                        return ReturnStatus.FAILURE;
+                    }
+
+                    result.set(discount);
+                }
+            }
+            break;
+            case CONTINUOUS_BASIS: {
+                double discount = Math.exp(-rate * yf);
+                result.set(discount);
+            }
+            break;
+            case DISCOUNT_FACTOR:
+                result.set(rate);
+                break;
+            default: {
+                double tmp = 1.0 + rate / rateBasis.getValue();
+                if (tmp <= 0.0 || IS_ALMOST_ZERO(tmp)) {
+                    logger.error("Bad rate");
+                    return ReturnStatus.FAILURE;
+                }
+                else {
+                    double discount = Math.pow(tmp, -rateBasis.getValue() * yf);
+                    result.set(discount);
+                }
+
+            }
+        }
+
+        return ReturnStatus.SUCCESS;
     }
 
     public static double cdsZeroPrice(TCurve zeroCurve, LocalDate date) {

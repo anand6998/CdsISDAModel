@@ -10,9 +10,7 @@ import org.boris.xlloop.util.Day;
 import org.boris.xlloop.util.ExcelDate;
 import org.threeten.bp.LocalDate;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -133,7 +131,7 @@ public class ExcelFunctions {
             for (i = 0; i < dateIntervalString.length(); i++) {
                 char idx = dateIntervalString.charAt(i);
                 if (Character.isDigit(idx)) {
-                    intList.add((int) idx);
+                    intList.add(Character.getNumericValue(idx));
                 } else {
                     break;
                 }
@@ -151,11 +149,12 @@ public class ExcelFunctions {
 
         assert (periodList.size() == 1);
 
+
+        Collections.reverse(intList);
         int number = 0;
         if (intList.size() > 0) {
-
-            for (int j = 0; j < intList.size(); j++) {
-                number += intList.get(0) * Math.pow(10, j);
+            for (int j = intList.size() - 1; j >= 0; j--) {
+                number += intList.get(j) * Math.pow(10, j);
             }
         } else {
             number = 1;

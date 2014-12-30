@@ -5,6 +5,7 @@ package com.anand.analytics.isdamodel.cds;
  */
 
 import com.anand.analytics.isdamodel.domain.*;
+import com.anand.analytics.isdamodel.server.CdsFunctionLibrary;
 import com.anand.analytics.isdamodel.utils.*;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
@@ -228,6 +229,78 @@ public class TestCdsFunctions {
 
         System.out.println(upfrontCharge.get());
         Assert.assertEquals(expectedValue, upfrontCharge.get(), DELTA);
+
+    }
+
+    @Test
+    public void testTdateInterval() throws  Exception {
+        String dateIntvl = "10Y";
+        System.out.println(ExcelFunctions.cdsStringToDateInterval(dateIntvl));
+    }
+
+    @Test
+    public void testBuildIRCurve() {
+
+        /*
+
+        XLoper cdsIrZeroCurveBuild(
+            Double xldValueDate,
+            String[] xlstraTypes,
+            String[] xlsaEndDates,
+            double[] xldaRates,
+            String xlsmmDc,
+            String xlsFixedIvl,
+            String xlsFloatIvl,
+            String xlsFixedDcc,
+            String xlsFloatDcc,
+            String xlsSwapBdc,
+            String xlsHolidays
+         */
+        double xldValueDate = 39713;
+        String[] xlstraTypes = {"M", "M", "M", "M", "M", "M", "S", "S", "S", "S", "S", "S", "S", "S", "S", "S", "S", "S", "S", "S", "S"};
+        String[] xlsaEndDtes = {"1M", "2M", "3M", "6M", "9M", "1Y", "2Y", "3Y", "4Y", "5Y", "6Y", "7Y", "8Y", "9Y", "10Y",
+                "11Y", "12Y", "15Y", "20Y", "25Y", "30Y"};
+        double[] xldaRates = {
+                0.00445000000,
+                0.00948800000,
+                0.01233700000,
+                0.01776200000,
+                0.01935000000,
+                0.02083800000,
+                0.01652000000,
+                0.02018000000,
+                0.02303300000,
+                0.02525000000,
+                0.02696000000,
+                0.02825000000,
+                0.02931000000,
+                0.03017000000,
+                0.03092000000,
+                0.03160000000,
+                0.03231000000,
+                0.03367000000,
+                0.03419000000,
+                0.03411000000,
+                0.03412000000};
+        String xlsmmDc = "ACT/360";
+        String xlsFixedIvl = "6M";
+        String xlsFloatIvl = "3M";
+        String xlsFixedDcc = "30/360";
+        String xlsFloatDcc = "ACT/360";
+        String xlsSwapBdc = "M";
+        String xlsHolidays = "None";
+
+        CdsFunctionLibrary.cdsIrZeroCurveBuild(xldValueDate,
+                xlstraTypes,
+                xlsaEndDtes,
+                xldaRates,
+                xlsmmDc,
+                xlsFixedIvl,
+                xlsFloatIvl,
+                xlsFixedDcc,
+                xlsFloatDcc,
+                xlsSwapBdc,
+                xlsHolidays);
 
     }
 

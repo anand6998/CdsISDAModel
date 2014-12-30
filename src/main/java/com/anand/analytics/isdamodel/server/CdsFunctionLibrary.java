@@ -943,7 +943,7 @@ public class CdsFunctionLibrary {
     public static XLoper cdsIrZeroCurveBuild(
             Double xldValueDate,
             String[] xlstraTypes,
-            double[] xldaEndDates,
+            String[] xlsaEndDates,
             double[] xldaRates,
             String xlsmmDc,
             String xlsFixedIvl,
@@ -957,7 +957,7 @@ public class CdsFunctionLibrary {
             Validate.notNull(xldValueDate, "Invalid value date");
             Validate.notNull(xlstraTypes, "Invalid types array");
             Validate.notEmpty(xlstraTypes, "Invalid types array");
-            Validate.notNull(xldaEndDates, "Invalid end dates");
+            Validate.notNull(xlsaEndDates, "Invalid end dates");
             Validate.notNull(xldaRates, "Invalid rates");
             Validate.notNull(xlsmmDc, "Invalid money market daycount");
             Validate.notNull(xlsFixedIvl, "Invalid interval for fixed leg");
@@ -967,7 +967,7 @@ public class CdsFunctionLibrary {
             Validate.notNull(xlsSwapBdc, "Invalid swap bdc");
             Validate.notEmpty(xlsHolidays, "Invalid holiday calendar");
 
-            Validate.isTrue(xldaEndDates.length == xldaRates.length, "Rates and Dates arrays must be of equal length");
+            Validate.isTrue(xlsaEndDates.length == xldaRates.length, "Rates and Dates arrays must be of equal length");
             Validate.isTrue(xlstraTypes.length == xldaRates.length, "Types and rates arrays must be of equal length");
 
             final LocalDate valueDate = ExcelFunctions.xlDateToLocalDateTime(xldValueDate);
@@ -976,7 +976,20 @@ public class CdsFunctionLibrary {
                 types[i] = xlstraTypes[i].charAt(0);
 
 
-            final LocalDate[] endDates = ExcelFunctions.xlDatesToLocalDateTimeArray(xldaEndDates);
+            final LocalDate[] endDates = new LocalDate[xlsaEndDates.length];
+            HolidayCalendarFactory holidayCalendarFactory = (HolidayCalendarFactory ) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
+            HolidayCalendar noneHolidayCalendar = holidayCalendarFactory.getCalendar("None");
+
+            for (int i = 0; i < xlsaEndDates.length; i++) {
+                TDateInterval dateInterval = ExcelFunctions.cdsStringToDateInterval(xlsaEndDates[i]);
+                /**
+                 * Advance the date
+                 */
+                LocalDate adjDate = TDateFunctions.dtFwdAny(valueDate, dateInterval);
+                LocalDate busnDate = noneHolidayCalendar.getNextBusinessDay(adjDate, TBadDayConvention.NONE);
+                endDates[i] = busnDate;
+            }
+
             final double[] rates = new double[xldaRates.length];
             for (int i = 0; i < rates.length; i++) {
                 rates[i] = xldaRates[i];
@@ -1003,7 +1016,7 @@ public class CdsFunctionLibrary {
             }
             final double floatFreq = result.get();
 
-            HolidayCalendarFactory holidayCalendarFactory = (HolidayCalendarFactory) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
+            //HolidayCalendarFactory holidayCalendarFactory = (HolidayCalendarFactory) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
             HolidayCalendar holidayCalendar = holidayCalendarFactory.getCalendar(calendar);
 
             final LocalDate baseDate = valueDate;
@@ -1030,8 +1043,7 @@ public class CdsFunctionLibrary {
                          * This code just tries to move each date by the no. of adjusted business days
                          *
                          */
-                        final int adjBusDays = (int) baseDate.periodUntil(endDates[i], ChronoUnit.DAYS);
-                        endDates[i] = holidayCalendar.addBusinessDays(endDates[i], adjBusDays);
+                        //TODO - to be implemented
                     }
 
                     if (baseDate.periodUntil(endDates[i], ChronoUnit.DAYS) <= 21) {
