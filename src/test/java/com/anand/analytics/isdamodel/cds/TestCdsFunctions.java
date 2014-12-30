@@ -514,14 +514,14 @@ public class TestCdsFunctions {
     }
 
     @Test
-    public void testStubMethodParser() {
+    public void testStubMethodParser() throws Exception {
         String stubMethodString = "F/S";
         TStubMethod stubMethod = ExcelFunctions.cdsStringToStubMethod(stubMethodString);
         System.out.println(stubMethod);
     }
 
     @Test
-    public void testDccParser() {
+    public void testDccParser() throws Exception {
         String dccString = "ACT/365F";
         DayCount dayCount = ExcelFunctions.cdsStringToDayCountConv(dccString);
         System.out.println(dayCount);

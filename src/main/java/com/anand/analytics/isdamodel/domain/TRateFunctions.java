@@ -1,11 +1,13 @@
 package com.anand.analytics.isdamodel.domain;
 
+import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.utils.CdsUtils;
 import com.anand.analytics.isdamodel.utils.DayCount;
 import com.anand.analytics.isdamodel.utils.DayCountBasis;
 import com.anand.analytics.isdamodel.utils.DoubleHolder;
 import com.anand.analytics.isdamodel.utils.IntHolder;
 import com.anand.analytics.isdamodel.utils.ReturnStatus;
+import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.temporal.ChronoUnit;
@@ -18,7 +20,7 @@ import static com.anand.analytics.isdamodel.utils.CdsFunctions.IS_ALMOST_ZERO;
  */
 public class TRateFunctions {
     private static Logger logger = Logger.getLogger(TRateFunctions.class);
-    public static double cdsForwardZeroPrice(TCurve zeroCurve, LocalDate startDate, LocalDate maturityDate) {
+    public static double cdsForwardZeroPrice(TCurve zeroCurve, LocalDate startDate, LocalDate maturityDate) throws CdsLibraryException {
         double startPrice = cdsZeroPrice(zeroCurve, startDate);
         double maturityPrice = cdsZeroPrice(zeroCurve, maturityDate);
         return maturityPrice / startPrice;
@@ -77,7 +79,7 @@ public class TRateFunctions {
         return ReturnStatus.SUCCESS;
     }
 
-    public static double cdsZeroPrice(TCurve zeroCurve, LocalDate date) {
+    public static double cdsZeroPrice(TCurve zeroCurve, LocalDate date) throws CdsLibraryException {
         double zeroPrice = 0;
         double rate, time;
 
@@ -87,112 +89,122 @@ public class TRateFunctions {
         return zeroPrice;
     }
 
-    public static double cdsZeroRate(TCurve zeroCurve, LocalDate date) {
-        ReturnStatus status = ReturnStatus.FAILURE;
+    public static double cdsZeroRate(TCurve zeroCurve, LocalDate date) throws CdsLibraryException {
+        try {
+            ReturnStatus status = ReturnStatus.FAILURE;
 
-        IntHolder exact = new IntHolder();
-        IntHolder lo = new IntHolder();
-        IntHolder hi = new IntHolder();
+            IntHolder exact = new IntHolder();
+            IntHolder lo = new IntHolder();
+            IntHolder hi = new IntHolder();
 
-        DoubleHolder rate = new DoubleHolder();
-        assert (zeroCurve != null);
-        assert (zeroCurve.dates.length > 0);
+            DoubleHolder rate = new DoubleHolder();
+            Validate.notNull(zeroCurve, "zeroCurve is null");
+            Validate.isTrue (zeroCurve.dates.length > 0, "zeroCurve.dates.length == 0");
 
-        if (CdsUtils.binarySearchLong(date,
-                zeroCurve.dates,
-                exact,
-                lo,
-                hi).equals(ReturnStatus.FAILURE)) {
-            throw new RuntimeException("Failed in cdsZeroRate");
-        }
-
-        if (exact.get() >= 0) {
-            //date found in zero rates
-            if (zcRateCC(zeroCurve, exact.get(), rate).equals(ReturnStatus.FAILURE)) {
-                logger.error("Error in calculating cc rate");
-                throw new RuntimeException("Error in calculating cc rate");
+            if (CdsUtils.binarySearchLong(date,
+                    zeroCurve.dates,
+                    exact,
+                    lo,
+                    hi).equals(ReturnStatus.FAILURE)) {
+                throw new CdsLibraryException("Failed in cdsZeroRate");
             }
-        } else if (lo.get() < 0) {
-            //date before start of zero dates
-            if (zcRateCC(zeroCurve, 0, rate).equals(ReturnStatus.FAILURE)) {
-                logger.error("Error in calculating cc rate");
-                throw new RuntimeException("Error in calculating cc rate");
-            }
-        } else if (hi.get() >= zeroCurve.dates.length) {
-            // date after end of zeroDates
-            if (zeroCurve.dates.length == 1) {
+
+            if (exact.get() >= 0) {
+                //date found in zero rates
+                if (zcRateCC(zeroCurve, exact.get(), rate).equals(ReturnStatus.FAILURE)) {
+                    logger.error("Error in calculating cc rate");
+                    throw new CdsLibraryException("Error in calculating cc rate");
+                }
+            } else if (lo.get() < 0) {
+                //date before start of zero dates
                 if (zcRateCC(zeroCurve, 0, rate).equals(ReturnStatus.FAILURE)) {
                     logger.error("Error in calculating cc rate");
-                    throw new RuntimeException("Error in calculating cc rate");
+                    throw new CdsLibraryException("Error in calculating cc rate");
+                }
+            } else if (hi.get() >= zeroCurve.dates.length) {
+                // date after end of zeroDates
+                if (zeroCurve.dates.length == 1) {
+                    if (zcRateCC(zeroCurve, 0, rate).equals(ReturnStatus.FAILURE)) {
+                        logger.error("Error in calculating cc rate");
+                        throw new CdsLibraryException("Error in calculating cc rate");
+                    }
+                } else {
+                    //extrapolate using last flat segment of the curve
+                    int loIdx = zeroCurve.dates.length - 2;
+                    int hiIdx = zeroCurve.dates.length - 1;
+
+                    if (zcInterpRate(zeroCurve, date, loIdx, hiIdx, rate).equals(ReturnStatus.FAILURE)) {
+                        logger.error("Error in calculating cc rate");
+                        throw new CdsLibraryException("Error in calculating cc rate");
+                    }
+
                 }
             } else {
-                //extrapolate using last flat segment of the curve
-                int loIdx = zeroCurve.dates.length - 2;
-                int hiIdx = zeroCurve.dates.length - 1;
-
-                if (zcInterpRate(zeroCurve, date, loIdx, hiIdx, rate).equals(ReturnStatus.FAILURE)) {
+                //Date between start and end of zero dates
+                if (zcInterpRate(zeroCurve, date, lo.get(), hi.get(), rate).equals(ReturnStatus.FAILURE)) {
                     logger.error("Error in calculating cc rate");
-                    throw new RuntimeException("Error in calculating cc rate");
+                    throw new CdsLibraryException("Error in calculating cc rate");
                 }
-
             }
-        } else {
-            //Date between start and end of zero dates
-            if (zcInterpRate(zeroCurve, date, lo.get(), hi.get(), rate).equals(ReturnStatus.FAILURE)) {
-                logger.error("Error in calculating cc rate");
-                throw new RuntimeException("Error in calculating cc rate");
-            }
+            return rate.get();
+        } catch (Exception ex) {
+            logger.error(ex);
+            throw new CdsLibraryException(ex.getMessage());
         }
-        return rate.get();
     }
 
     public static ReturnStatus zcInterpRate(TCurve zeroCurve, LocalDate date, int lo, int hi, DoubleHolder rate) {
-        long t1;
-        long t2;
-        long t;
-        double z1t1;
-        double z2t2;
-        DoubleHolder z1 = new DoubleHolder();
-        DoubleHolder z2 = new DoubleHolder();
+        try {
+            long t1;
+            long t2;
+            long t;
+            double z1t1;
+            double z2t2;
+            DoubleHolder z1 = new DoubleHolder();
+            DoubleHolder z2 = new DoubleHolder();
 
 
-        t1 = zeroCurve.baseDate.periodUntil(zeroCurve.dates[lo], ChronoUnit.DAYS);
-        t2 = zeroCurve.baseDate.periodUntil(zeroCurve.dates[hi], ChronoUnit.DAYS);
+            t1 = zeroCurve.baseDate.periodUntil(zeroCurve.dates[lo], ChronoUnit.DAYS);
+            t2 = zeroCurve.baseDate.periodUntil(zeroCurve.dates[hi], ChronoUnit.DAYS);
 
-        t = zeroCurve.baseDate.periodUntil(date, ChronoUnit.DAYS);
+            t = zeroCurve.baseDate.periodUntil(date, ChronoUnit.DAYS);
 
-        assert (t > t1);
-        assert (t2 > t1);
+            Validate.isTrue (t > t1, "t <= t1");
+            Validate.isTrue (t2 > t1, " t2 <= t1");
 
-        if (zcRateCC(zeroCurve, lo, z1).equals(ReturnStatus.FAILURE)) {
-            logger.error("Error in calculating interp rate");
-            return ReturnStatus.FAILURE;
-        }
-        if (zcRateCC(zeroCurve, hi, z2).equals(ReturnStatus.FAILURE)) {
-            logger.error("Error in calculating interp rate");
-            return ReturnStatus.FAILURE;
-        }
-
-        z1t1 = z1.get() * t1;
-        z2t2 = z2.get() * t2;
-
-        if (t == 0) {
-            /**
-             * If date equals the base date, then the zero rate is undefined and irrelevant.
-             * So let us get the rate for the following day which is in the right ballpart at any rate
-             * An exception to this rule is when t2 = 0 as wll. In this case rate = z2
-             */
-            if (t2 == 0) {
-                rate = z2;
-                return ReturnStatus.SUCCESS;
+            if (zcRateCC(zeroCurve, lo, z1).equals(ReturnStatus.FAILURE)) {
+                logger.error("Error in calculating interp rate");
+                return ReturnStatus.FAILURE;
+            }
+            if (zcRateCC(zeroCurve, hi, z2).equals(ReturnStatus.FAILURE)) {
+                logger.error("Error in calculating interp rate");
+                return ReturnStatus.FAILURE;
             }
 
-            t = 1;
-        }
+            z1t1 = z1.get() * t1;
+            z2t2 = z2.get() * t2;
 
-        double zt = z1t1 + (z2t2 - z1t1) * (t - t1) / (t2 - t1);
-        rate.set(zt / t);
-        return ReturnStatus.SUCCESS;
+            if (t == 0) {
+                /**
+                 * If date equals the base date, then the zero rate is undefined and irrelevant.
+                 * So let us get the rate for the following day which is in the right ballpart at any rate
+                 * An exception to this rule is when t2 = 0 as wll. In this case rate = z2
+                 */
+                if (t2 == 0) {
+                    rate = z2;
+                    return ReturnStatus.SUCCESS;
+                }
+
+                t = 1;
+            }
+
+            double zt = z1t1 + (z2t2 - z1t1) * (t - t1) / (t2 - t1);
+            rate.set(zt / t);
+            return ReturnStatus.SUCCESS;
+        } catch (Exception ex) {
+            logger.error(ex);
+            return ReturnStatus.FAILURE;
+        }
 
     }
 

@@ -3,6 +3,7 @@ package com.anand.analytics.isdamodel.domain;
 
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.utils.*;
+import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.temporal.ChronoUnit;
@@ -185,77 +186,84 @@ public class TFeeLeg {
                               boolean payAccruedAtStart,
                               DoubleHolder result
     ) {
-        double myPv = 0.0;
-        double valueDatePv;
+        try {
+            double myPv = 0.0;
+            double valueDatePv;
 
-        LocalDate matDate;
-        TDateList tl = null;
+            LocalDate matDate;
+            TDateList tl = null;
 
-        assert (discountCurve != null);
-        assert (spreadCurve != null);
-        assert (result != null);
 
-        assert (valueDate.isAfter(today));
-        assert (stepinDate.isAfter(today) || stepinDate.isAfter(today));
+            Validate.notNull (discountCurve, "discountCurve is null");
+            Validate.notNull (spreadCurve, "spreadCurve is null");
+            Validate.notNull (result, "result is null");
 
-        double CDS_LOG0_THRESHOLD = 1e-100;
-        if (nbDates > 1) {
-            /**
-             * It is more efficient to compute the timeline just once and
-             * truncate is for each payment
-             *
-             */
-            LocalDate startDate = accStartDates[0];
-            LocalDate endDate = accEndDates[nbDates - 1];
 
-            double rate = TRateFunctions.cdsZeroPrice(spreadCurve, endDate);
-            assert (rate > CDS_LOG0_THRESHOLD);
+            Validate.isTrue(valueDate.isAfter(today), "valueDate < today");
+            Validate.isTrue(stepinDate.isAfter(today) || stepinDate.isAfter(today), "stepinDate < today");
 
-            rate = TRateFunctions.cdsZeroPrice(discountCurve, endDate);
-            assert (rate > CDS_LOG0_THRESHOLD);
+            double CDS_LOG0_THRESHOLD = 1e-100;
+            if (nbDates > 1) {
+                /**
+                 * It is more efficient to compute the timeline just once and
+                 * truncate is for each payment
+                 *
+                 */
+                LocalDate startDate = accStartDates[0];
+                LocalDate endDate = accEndDates[nbDates - 1];
 
-            tl = cdsRiskyTimeLine(startDate, endDate, discountCurve, spreadCurve);
+                double rate = TRateFunctions.cdsZeroPrice(spreadCurve, endDate);
+                Validate.isTrue(rate > CDS_LOG0_THRESHOLD, "rate < CDS_LOG0_THRESHOLD");
 
-        }
+                rate = TRateFunctions.cdsZeroPrice(discountCurve, endDate);
+                Validate.isTrue(rate > CDS_LOG0_THRESHOLD, "rate < CDS_LOG0_THRESHOLD");
 
-        matDate = obsStartOfDay == true ? accEndDates[nbDates - 1].plusDays(-1) : accEndDates[nbDates - 1];
-        if (today.isAfter(matDate) || stepinDate.isAfter(matDate)) {
-            result.set(0);
+                tl = cdsRiskyTimeLine(startDate, endDate, discountCurve, spreadCurve);
+            }
+
+
+            matDate = obsStartOfDay == true ? accEndDates[nbDates - 1].plusDays(-1) : accEndDates[nbDates - 1];
+            if (today.isAfter(matDate) || stepinDate.isAfter(matDate)) {
+                result.set(0);
+                return ReturnStatus.SUCCESS;
+            }
+
+            for (int i = 0; i < nbDates; ++i) {
+                DoubleHolder thisPV = new DoubleHolder(0);
+                feePaymentPVWithTimeline(accrualPayConv,
+                        today,
+                        stepinDate,
+                        accStartDates[i],
+                        accEndDates[i],
+                        payDates[i],
+                        dcc,
+                        notional,
+                        couponRate,
+                        discountCurve,
+                        spreadCurve,
+                        tl,
+                        obsStartOfDay,
+                        thisPV);
+
+                myPv += thisPV.get();
+            }
+
+            valueDatePv = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, valueDate);
+            result.set(myPv / valueDatePv);
+
+            if (payAccruedAtStart) /* clean price */ {
+                DoubleHolder ai = new DoubleHolder();
+                feeLegAI(stepinDate, ai);
+                double pv = result.get();
+                pv -= ai.get();
+                result.set(pv);
+            }
+
             return ReturnStatus.SUCCESS;
+        } catch (Exception ex) {
+            logger.error(ex);
+            return ReturnStatus.FAILURE;
         }
-
-        for (int i = 0; i < nbDates; ++i) {
-            DoubleHolder thisPV = new DoubleHolder(0);
-            feePaymentPVWithTimeline(accrualPayConv,
-                    today,
-                    stepinDate,
-                    accStartDates[i],
-                    accEndDates[i],
-                    payDates[i],
-                    dcc,
-                    notional,
-                    couponRate,
-                    discountCurve,
-                    spreadCurve,
-                    tl,
-                    obsStartOfDay,
-                    thisPV);
-
-            myPv += thisPV.get();
-        }
-
-        valueDatePv = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, valueDate);
-        result.set(myPv / valueDatePv);
-
-        if (payAccruedAtStart) /* clean price */ {
-            DoubleHolder ai = new DoubleHolder();
-            feeLegAI(stepinDate, ai);
-            double pv = result.get();
-            pv -= ai.get();
-            result.set(pv);
-        }
-
-        return ReturnStatus.SUCCESS;
     }
 
     private ReturnStatus feeLegAI(LocalDate today, DoubleHolder ai) {
@@ -320,77 +328,82 @@ public class TFeeLeg {
                                           TDateList tl,
                                           boolean obsStartOfDay,
                                           DoubleHolder pv) {
-        double myPv = 0;
+        try {
+            double myPv = 0;
 
-        /**
-         * Because survival is calculated at the end of the day, then if
-         * we observe survival at the start of the day, we need to subtract
-         * one from the date
-         */
-        int obsOffset = obsStartOfDay ? -1 : 0;
-        assert (discountCurve != null);
-        assert (spreadCurve != null);
-        assert (pv != null);
+            /**
+             * Because survival is calculated at the end of the day, then if
+             * we observe survival at the start of the day, we need to subtract
+             * one from the date
+             */
+            int obsOffset = obsStartOfDay ? -1 : 0;
+            Validate.notNull (discountCurve, "discountCurve is null");
+            Validate.notNull (spreadCurve, "spreadCurve is null");
+            Validate.notNull (pv, "pv is null");
 
-        if (accEndDate.isEqual(stepInDate) || accEndDate.isBefore(stepInDate)) {
-            pv.set(0);
-            return ReturnStatus.SUCCESS;
-        }
-
-        switch (accrualPayConv) {
-            case ACCRUAL_PAY_NONE: {
-                /**
-                 * fee leg pays at pay date if it has survived to accrual end date
-                 */
-                double amount, survival, discount;
-                DoubleHolder accrualTime = new DoubleHolder();
-
-                cdsDayCountFraction(accStartDate, accEndDate, accruedDCC, accrualTime);
-                amount = notional * couponRate * accrualTime.get();
-                survival = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, accEndDate.plusDays(obsOffset));
-                discount = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, payDate);
-
-                myPv = amount * survival * discount;
+            if (accEndDate.isEqual(stepInDate) || accEndDate.isBefore(stepInDate)) {
+                pv.set(0);
+                return ReturnStatus.SUCCESS;
             }
-            break;
-            case ACCRUAL_PAY_ALL: {
-                /**
-                 * fee leg pays accrual on default - otherwise it pays at pay date
-                 * if it has survived to accrual end date
-                 */
-                double amount, survival, discount;
-                DoubleHolder accrual = new DoubleHolder(0);
-                DoubleHolder accrualTime = new DoubleHolder();
-                cdsDayCountFraction(accStartDate, accEndDate, accruedDCC, accrualTime);
 
+            switch (accrualPayConv) {
+                case ACCRUAL_PAY_NONE: {
+                    /**
+                     * fee leg pays at pay date if it has survived to accrual end date
+                     */
+                    double amount, survival, discount;
+                    DoubleHolder accrualTime = new DoubleHolder();
 
-                amount = notional * couponRate * accrualTime.get();
-                survival = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, accEndDate.plusDays(obsOffset));
-                discount = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, payDate);
-                myPv = amount * survival * discount;
+                    cdsDayCountFraction(accStartDate, accEndDate, accruedDCC, accrualTime);
+                    amount = notional * couponRate * accrualTime.get();
+                    survival = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, accEndDate.plusDays(obsOffset));
+                    discount = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, payDate);
 
-                /**
-                 * also need to calculate accrual pv
-                 */
-                cdsAccrualOnDefaultPVWithTimeLine(today, stepInDate.plusDays(obsOffset),
-                        accStartDate.plusDays(obsOffset),
-                        accEndDate.plusDays(obsOffset),
-                        amount,
-                        discountCurve,
-                        spreadCurve,
-                        tl,
-                        accrual);
-
-                myPv += accrual.get();
+                    myPv = amount * survival * discount;
+                }
                 break;
+                case ACCRUAL_PAY_ALL: {
+                    /**
+                     * fee leg pays accrual on default - otherwise it pays at pay date
+                     * if it has survived to accrual end date
+                     */
+                    double amount, survival, discount;
+                    DoubleHolder accrual = new DoubleHolder(0);
+                    DoubleHolder accrualTime = new DoubleHolder();
+                    cdsDayCountFraction(accStartDate, accEndDate, accruedDCC, accrualTime);
+
+
+                    amount = notional * couponRate * accrualTime.get();
+                    survival = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, accEndDate.plusDays(obsOffset));
+                    discount = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, payDate);
+                    myPv = amount * survival * discount;
+
+                    /**
+                     * also need to calculate accrual pv
+                     */
+                    cdsAccrualOnDefaultPVWithTimeLine(today, stepInDate.plusDays(obsOffset),
+                            accStartDate.plusDays(obsOffset),
+                            accEndDate.plusDays(obsOffset),
+                            amount,
+                            discountCurve,
+                            spreadCurve,
+                            tl,
+                            accrual);
+
+                    myPv += accrual.get();
+                    break;
+                }
+
+                default:
+                    throw new RuntimeException("Invalid accrual payment type");
             }
 
-            default:
-                throw new RuntimeException("Invalid accrual payment type");
+            pv.set(myPv);
+            return ReturnStatus.SUCCESS;
+        } catch (Exception ex) {
+            logger.error (ex);
+            return ReturnStatus.FAILURE;
         }
-
-        pv.set(myPv);
-        return ReturnStatus.SUCCESS;
     }
 
     private ReturnStatus cdsAccrualOnDefaultPVWithTimeLine(LocalDate today,
@@ -402,209 +415,225 @@ public class TFeeLeg {
                                                            TCurve spreadCurve,
                                                            TDateList criticalDates,
                                                            DoubleHolder pv) {
-        double myPv = 0;
+        try {
+            double myPv = 0;
 
-        double t, s0, s1, df0, df1, accRate;
-        LocalDate subStartDate;
-        TDateList tl = null;
+            double t, s0, s1, df0, df1, accRate;
+            LocalDate subStartDate;
+            TDateList tl = null;
 
-        assert (endDate.isAfter(startDate));
-        assert (discountCurve != null);
-        assert (spreadCurve != null);
-        assert (pv != null);
-
-        /**
-         ** Timeline is points on the spreadCurve between startDate and endDate,
-         ** combined with points from the discCurve, plus
-         ** the startDate and endDate.
-         */
-
-        if (criticalDates != null) {
-            List<LocalDate> dateList = Arrays.asList(criticalDates.dateArray);
-            List<LocalDate> truncDates = cdsTruncateTimeLine(criticalDates, startDate, endDate);
-            //if(!(date.isBefore(startDate) || date.isAfter(endDate)))
-
-            tl = new TDateList(truncDates);
-        } else {
-            tl = cdsRiskyTimeLine(startDate, endDate, discountCurve, spreadCurve);
-        }
-
-        /**
-         * the integration - we can assume flat forwards between points on the timeline
-         * this is true for both curves
-         *
-         * we are integrating -Zt dS/dt where Z is the discount factor and S is the
-         * survival probability and t is the accrual time
-         *
-         * assuming flat forwards on each part of the integration, this is an exact
-         * integral
-         */
-
-        subStartDate = stepinDate.isAfter(startDate) ? stepinDate : startDate;
-        t = (double) (startDate.periodUntil(endDate, ChronoUnit.DAYS)) / 365.;
-        accRate = amount / t;
-        s0 = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, subStartDate);
-        df0 = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, today.isAfter(subStartDate) ? today : subStartDate);
-
-        for (int i = 1; i < tl.fNumItems; i++) {
-            double lambda, fwdRate, thisPv = 0;
-            double t0, t1, lambdaFwdRate;
-
-            if (tl.dateArray[i].isBefore(stepinDate) || tl.dateArray[i].isEqual(stepinDate))
-                continue;
-
-            s1 = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, tl.dateArray[i]);
-            df1 = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, tl.dateArray[i]);
-
-            t0 = (startDate.periodUntil(subStartDate, ChronoUnit.DAYS) + 0.5) / 365.;
-            t1 = (startDate.periodUntil(tl.dateArray[i], ChronoUnit.DAYS) + 0.5) / 365.;
-            t = t1 - t0;
-
+            Validate.isTrue(endDate.isAfter(startDate), "endDate < startDate");
+            Validate.notNull (discountCurve, "discountCurve is null");
+            Validate.notNull (spreadCurve, "spreadCurve is null");
+            Validate.notNull (pv, "pv is null");
 
             /**
-             * Markit proposed Fix
-             * Some of the division of the original ISDA model can be removed
-             * lambda = log( s0 / s1) / t = (log(s0) - log(s1)) / t
-             * fwdRate = log(df0 / df) / t = (log(df0) - log(df1)) / t
-             * Divisions by t can be absorbed by later formulas as well.
+             ** Timeline is points on the spreadCurve between startDate and endDate,
+             ** combined with points from the discCurve, plus
+             ** the startDate and endDate.
              */
 
-            lambda = Math.log(s0) - Math.log(s1);
-            fwdRate = Math.log(df0) - Math.log(df1);
-            lambdaFwdRate = lambda + fwdRate + 1.0e-50;
+            if (criticalDates != null) {
+                List<LocalDate> dateList = Arrays.asList(criticalDates.dateArray);
+                List<LocalDate> truncDates = cdsTruncateTimeLine(criticalDates, startDate, endDate);
+                //if(!(date.isBefore(startDate) || date.isAfter(endDate)))
 
-            /**
-             * If lambdafwdRate is extremely small, original calculation generates big noise on computer
-             * due to the small denominators.
-             * In this case, Talyor expansion is employed to remove lambdafwdRate from denomintors
-             * so that numerical noise is signicantly reduced.
-             */
-            if (Math.abs(lambdaFwdRate) > 1e-4) {
-
-                /*This is the original formula which contains an integral*/
-                thisPv = lambda * accRate * s0 * df0 * (
-                        (t0 + t / (lambdaFwdRate)) / (lambdaFwdRate) -
-                                (t1 + t / (lambdaFwdRate)) / (lambdaFwdRate) *
-                                        s1 / s0 * df1 / df0);
-
-                /** This is the accrual on default formula fix
-                 thisPv  = lambda * accRate * s0 * df0 * t * ( \
-                 1.0 / lambdafwdRate / lambdafwdRate - \
-                 (1.0 + 1.0 / lambdafwdRate) / lambdafwdRate * \
-                 s1 / s0 * df1 / df0);
-                 */
+                tl = new TDateList(truncDates);
             } else {
-                /**
-                 This is the numerical fix corresponding to the original formula
-                 */
-                final double lambdaAccRate = lambda * s0 * df0 * accRate * 0.5;
-                final double thisPv1 = lambdaAccRate * (t0 + t1);
-
-                final double lambdaAccRateLamdaFwdRate = lambdaAccRate * lambdaFwdRate / 3.;
-                final double thisPv2 = -lambdaAccRateLamdaFwdRate * (t0 + 2. * t1);
-
-                final double lambdaAccRateLamdaFwdRate2 = lambdaAccRateLamdaFwdRate * lambdaFwdRate * .25;
-                final double thisPv3 = lambdaAccRateLamdaFwdRate2 * (t0 + 3. * t1);
-
-                final double lambdaAccRateLamdaFwdRate3 = lambdaAccRateLamdaFwdRate2 * lambdaFwdRate * .2;
-                final double thisPv4 = -lambdaAccRateLamdaFwdRate3 * (t0 + 4. * t1);
-
-                final double lambdaAccRateLamdaFwdRate4 = lambdaAccRateLamdaFwdRate3 * lambdaFwdRate / 6.;
-                final double thisPv5 = lambdaAccRateLamdaFwdRate4 * (t0 + 5. * t1);
-
-                /** This is the numerical fix along with accrual on default model fix
-                 const double lambdaAccRate = lambda * s0 * df0 * accRate * t;
-                 const double thisPv1 = lambdaAccRate * 0.5;
-
-                 const double lambdaAccRateLamdaFwdRate = lambdaAccRate * lambdafwdRate;
-                 const double thisPv2 = -lambdaAccRateLamdaFwdRate / 3.;
-
-                 const double lambdaAccRateLamdaFwdRate2 = lambdaAccRateLamdaFwdRate * lambdafwdRate;
-                 const double thisPv3 = lambdaAccRateLamdaFwdRate2 * .125;
-
-                 const double lambdaAccRateLamdaFwdRate3 = lambdaAccRateLamdaFwdRate2 * lambdafwdRate;
-                 const double thisPv4 = -lambdaAccRateLamdaFwdRate3 / 30.;
-
-                 const double lambdaAccRateLamdaFwdRate4 = lambdaAccRateLamdaFwdRate3 * lambdafwdRate;
-                 const double thisPv5 = lambdaAccRateLamdaFwdRate4 / 144.;
-                 */
-
-                thisPv += thisPv1;
-                thisPv += thisPv2;
-                thisPv += thisPv3;
-                thisPv += thisPv4;
-                thisPv += thisPv5;
+                tl = cdsRiskyTimeLine(startDate, endDate, discountCurve, spreadCurve);
             }
 
-            myPv += thisPv;
-            s0 = s1;
-            df0 = df1;
-            subStartDate = tl.dateArray[i];
+            /**
+             * the integration - we can assume flat forwards between points on the timeline
+             * this is true for both curves
+             *
+             * we are integrating -Zt dS/dt where Z is the discount factor and S is the
+             * survival probability and t is the accrual time
+             *
+             * assuming flat forwards on each part of the integration, this is an exact
+             * integral
+             */
+
+            subStartDate = stepinDate.isAfter(startDate) ? stepinDate : startDate;
+            t = (double) (startDate.periodUntil(endDate, ChronoUnit.DAYS)) / 365.;
+            accRate = amount / t;
+            s0 = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, subStartDate);
+            df0 = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, today.isAfter(subStartDate) ? today : subStartDate);
+
+            for (int i = 1; i < tl.fNumItems; i++) {
+                double lambda, fwdRate, thisPv = 0;
+                double t0, t1, lambdaFwdRate;
+
+                if (tl.dateArray[i].isBefore(stepinDate) || tl.dateArray[i].isEqual(stepinDate))
+                    continue;
+
+                s1 = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, tl.dateArray[i]);
+                df1 = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, tl.dateArray[i]);
+
+                t0 = (startDate.periodUntil(subStartDate, ChronoUnit.DAYS) + 0.5) / 365.;
+                t1 = (startDate.periodUntil(tl.dateArray[i], ChronoUnit.DAYS) + 0.5) / 365.;
+                t = t1 - t0;
+
+
+                /**
+                 * Markit proposed Fix
+                 * Some of the division of the original ISDA model can be removed
+                 * lambda = log( s0 / s1) / t = (log(s0) - log(s1)) / t
+                 * fwdRate = log(df0 / df) / t = (log(df0) - log(df1)) / t
+                 * Divisions by t can be absorbed by later formulas as well.
+                 */
+
+                lambda = Math.log(s0) - Math.log(s1);
+                fwdRate = Math.log(df0) - Math.log(df1);
+                lambdaFwdRate = lambda + fwdRate + 1.0e-50;
+
+                /**
+                 * If lambdafwdRate is extremely small, original calculation generates big noise on computer
+                 * due to the small denominators.
+                 * In this case, Talyor expansion is employed to remove lambdafwdRate from denomintors
+                 * so that numerical noise is signicantly reduced.
+                 */
+                if (Math.abs(lambdaFwdRate) > 1e-4) {
+
+                /*This is the original formula which contains an integral*/
+                    thisPv = lambda * accRate * s0 * df0 * (
+                            (t0 + t / (lambdaFwdRate)) / (lambdaFwdRate) -
+                                    (t1 + t / (lambdaFwdRate)) / (lambdaFwdRate) *
+                                            s1 / s0 * df1 / df0);
+
+                    /** This is the accrual on default formula fix
+                     thisPv  = lambda * accRate * s0 * df0 * t * ( \
+                     1.0 / lambdafwdRate / lambdafwdRate - \
+                     (1.0 + 1.0 / lambdafwdRate) / lambdafwdRate * \
+                     s1 / s0 * df1 / df0);
+                     */
+                } else {
+                    /**
+                     This is the numerical fix corresponding to the original formula
+                     */
+                    final double lambdaAccRate = lambda * s0 * df0 * accRate * 0.5;
+                    final double thisPv1 = lambdaAccRate * (t0 + t1);
+
+                    final double lambdaAccRateLamdaFwdRate = lambdaAccRate * lambdaFwdRate / 3.;
+                    final double thisPv2 = -lambdaAccRateLamdaFwdRate * (t0 + 2. * t1);
+
+                    final double lambdaAccRateLamdaFwdRate2 = lambdaAccRateLamdaFwdRate * lambdaFwdRate * .25;
+                    final double thisPv3 = lambdaAccRateLamdaFwdRate2 * (t0 + 3. * t1);
+
+                    final double lambdaAccRateLamdaFwdRate3 = lambdaAccRateLamdaFwdRate2 * lambdaFwdRate * .2;
+                    final double thisPv4 = -lambdaAccRateLamdaFwdRate3 * (t0 + 4. * t1);
+
+                    final double lambdaAccRateLamdaFwdRate4 = lambdaAccRateLamdaFwdRate3 * lambdaFwdRate / 6.;
+                    final double thisPv5 = lambdaAccRateLamdaFwdRate4 * (t0 + 5. * t1);
+
+                    /** This is the numerical fix along with accrual on default model fix
+                     const double lambdaAccRate = lambda * s0 * df0 * accRate * t;
+                     const double thisPv1 = lambdaAccRate * 0.5;
+
+                     const double lambdaAccRateLamdaFwdRate = lambdaAccRate * lambdafwdRate;
+                     const double thisPv2 = -lambdaAccRateLamdaFwdRate / 3.;
+
+                     const double lambdaAccRateLamdaFwdRate2 = lambdaAccRateLamdaFwdRate * lambdafwdRate;
+                     const double thisPv3 = lambdaAccRateLamdaFwdRate2 * .125;
+
+                     const double lambdaAccRateLamdaFwdRate3 = lambdaAccRateLamdaFwdRate2 * lambdafwdRate;
+                     const double thisPv4 = -lambdaAccRateLamdaFwdRate3 / 30.;
+
+                     const double lambdaAccRateLamdaFwdRate4 = lambdaAccRateLamdaFwdRate3 * lambdafwdRate;
+                     const double thisPv5 = lambdaAccRateLamdaFwdRate4 / 144.;
+                     */
+
+                    thisPv += thisPv1;
+                    thisPv += thisPv2;
+                    thisPv += thisPv3;
+                    thisPv += thisPv4;
+                    thisPv += thisPv5;
+                }
+
+                myPv += thisPv;
+                s0 = s1;
+                df0 = df1;
+                subStartDate = tl.dateArray[i];
+            }
+
+            pv.set(myPv);
+            return ReturnStatus.SUCCESS;
+        } catch (Exception ex) {
+            logger.error(ex);
+            return ReturnStatus.FAILURE;
         }
-
-        pv.set(myPv);
-        return ReturnStatus.SUCCESS;
     }
 
-    public static List<LocalDate> cdsTruncateTimeLine(TDateList criticalDates, LocalDate startDate, LocalDate endDate) {
-        LocalDate[] startEndDate = new LocalDate[2];
-        startEndDate[0] = startDate;
-        startEndDate[1] = endDate;
+    public static List<LocalDate> cdsTruncateTimeLine(TDateList criticalDates, LocalDate startDate, LocalDate endDate)
+    throws CdsLibraryException {
+        try {
+            LocalDate[] startEndDate = new LocalDate[2];
+            startEndDate[0] = startDate;
+            startEndDate[1] = endDate;
 
-        assert (endDate.isAfter(startDate));
-        TDateList tl = cdsDateListAddDates(criticalDates, 2, startEndDate);
-        if (tl == null)
-            throw new RuntimeException("cdsTruncateTimeline");
+            Validate.isTrue(endDate.isAfter(startDate), "endDate < startDate");
+            TDateList tl = cdsDateListAddDates(criticalDates, 2, startEndDate);
+            Validate.notNull(tl, "cdsTruncateTimeline failed");
 
-        List<LocalDate> retList = new ArrayList<>();
-        for (LocalDate date : tl.dateArray)
-            if (!(date.isBefore(startDate) || date.isAfter(endDate)))
-                retList.add(date);
-        return retList;
+            List<LocalDate> retList = new ArrayList<>();
+            for (LocalDate date : tl.dateArray)
+                if (!(date.isBefore(startDate) || date.isAfter(endDate)))
+                    retList.add(date);
+            return retList;
+        } catch (Exception ex) {
+            logger.error(ex);
+            throw new CdsLibraryException(ex.getMessage());
+        }
     }
 
 
-    public static TDateList cdsRiskyTimeLine(LocalDate startDate, LocalDate endDate, TCurve discountCurve, TCurve spreadCurve) {
+    public static TDateList cdsRiskyTimeLine(LocalDate startDate, LocalDate endDate, TCurve discountCurve, TCurve spreadCurve)
+    throws CdsLibraryException{
         TDateList tl = null;
         LocalDate[] dates = null;
 
-        assert (discountCurve != null);
-        assert (spreadCurve != null);
-        assert (endDate.isAfter(startDate));
+        try {
+            Validate.isTrue(endDate.isAfter(startDate), "endDate < startDate");
+            Validate.notNull(discountCurve, "discountCurve is null");
+            Validate.notNull(spreadCurve, "spreadCurve is null");
 
-        /**
-         * Time line is points on the spread curve between the start date and end date
-         * plus the start date and end date, plus the critical dates
-         */
-        tl = new TDateList(discountCurve);
 
-        /**
-         * Code for JpmcdsDatesFromCurve
-         */
-        dates = new LocalDate[spreadCurve.dates.length];
-        for (int i = 0; i < spreadCurve.dates.length; i++)
-            dates[i] = spreadCurve.dates[i];
+            /**
+             * Time line is points on the spread curve between the start date and end date
+             * plus the start date and end date, plus the critical dates
+             */
+            tl = new TDateList(discountCurve);
 
-        tl = cdsDateListAddDatesFreeOld(tl, spreadCurve.dates.length, dates);
-        tl = cdsDateListAddDatesFreeOld(tl, 1, new LocalDate[]{startDate});
-        tl = cdsDateListAddDatesFreeOld(tl, 1, new LocalDate[]{endDate});
+            /**
+             * Code for JpmcdsDatesFromCurve
+             */
+            dates = new LocalDate[spreadCurve.dates.length];
+            for (int i = 0; i < spreadCurve.dates.length; i++)
+                dates[i] = spreadCurve.dates[i];
 
-        /**
-         * Remove dates strictly before and after end dates
-         */
+            tl = cdsDateListAddDatesFreeOld(tl, spreadCurve.dates.length, dates);
+            tl = cdsDateListAddDatesFreeOld(tl, 1, new LocalDate[]{startDate});
+            tl = cdsDateListAddDatesFreeOld(tl, 1, new LocalDate[]{endDate});
 
-        List<LocalDate> dateList = Arrays.asList(tl.dateArray);
-        List<LocalDate> truncatedList = new ArrayList<LocalDate>();
+            /**
+             * Remove dates strictly before and after end dates
+             */
 
-        for (LocalDate date : dateList) {
-            if (!(date.isBefore(startDate) || date.isAfter(endDate)))
-                truncatedList.add(date);
+            List<LocalDate> dateList = Arrays.asList(tl.dateArray);
+            List<LocalDate> truncatedList = new ArrayList<LocalDate>();
+
+            for (LocalDate date : dateList) {
+                if (!(date.isBefore(startDate) || date.isAfter(endDate)))
+                    truncatedList.add(date);
+            }
+
+            LocalDate[] truncatedDateList = truncatedList.toArray(new LocalDate[0]);
+            tl = new TDateList(truncatedDateList.length, truncatedDateList);
+
+            return tl;
+        } catch (Exception ex) {
+            throw new CdsLibraryException(ex.getMessage());
         }
-
-        LocalDate[] truncatedDateList = truncatedList.toArray(new LocalDate[0]);
-        tl = new TDateList(truncatedDateList.length, truncatedDateList);
-
-        return tl;
 
     }
 
@@ -664,121 +693,127 @@ public class TFeeLeg {
 
 
     //TODO - this whole logic needs to be looked at again
-    private TDateList dateListMakeRegular(LocalDate startDate, LocalDate endDate, TDateInterval dateInterval, TStubMethod stubType) {
+    private TDateList dateListMakeRegular(LocalDate startDate, LocalDate endDate, TDateInterval dateInterval, TStubMethod stubType)
+        throws CdsLibraryException {
 
-        TDateInterval multiInterval;
-        int numIntervals = 0;
-        int totalDates = 0;
-        LocalDate date;
-        int numTmpDates = 100;
-        LocalDate[] tmpDates = new LocalDate[numTmpDates];
+        try {
+            TDateInterval multiInterval;
+            int numIntervals = 0;
+            int totalDates = 0;
+            LocalDate date;
+            int numTmpDates = 100;
+            LocalDate[] tmpDates = new LocalDate[numTmpDates];
 
-        TDateList dl = null;
-        int i;
-        if (!(stubType.stubAtEnd)) {
+            TDateList dl = null;
+            int i;
+            if (!(stubType.stubAtEnd)) {
             /*front stub - so we start at end and work backwords*/
-            numIntervals = 0;
-            date = endDate;
+                numIntervals = 0;
+                date = endDate;
 
-            i = tmpDates.length;
+                i = tmpDates.length;
 
-            while (date.isAfter(startDate)) {
-                if (i == 0) {
-                    dl = cdsDateListAddDatesFreeOld(dl, numTmpDates, tmpDates);
-                    i = numTmpDates;
+                while (date.isAfter(startDate)) {
+                    if (i == 0) {
+                        dl = cdsDateListAddDatesFreeOld(dl, numTmpDates, tmpDates);
+                        i = numTmpDates;
+                    }
+
+                    --i;
+                    --numIntervals;
+                    ++totalDates;
+
+                    tmpDates[i] = date;
+
+                    multiInterval = new TDateInterval(dateInterval.prd * numIntervals, dateInterval.periodType, 0);
+                    date = dtFwdAny(endDate, multiInterval);
+
                 }
 
-                --i;
-                --numIntervals;
-                ++totalDates;
+                Validate.isTrue(totalDates > 0, "totalDates <= 0");
+                Validate.isTrue(date.isBefore(startDate) || date.isEqual(startDate), "date > startDate");
 
-                tmpDates[i] = date;
-
-                multiInterval = new TDateInterval(dateInterval.prd * numIntervals, dateInterval.periodType, 0);
-                date = dtFwdAny(endDate, multiInterval);
-
-            }
-
-            assert (totalDates > 0);
-            assert (date.isBefore(startDate) || date.isEqual(startDate));
-
-            if (date.isEqual(startDate) || totalDates == 1 || !stubType.longStub) {
+                if (date.isEqual(startDate) || totalDates == 1 || !stubType.longStub) {
                 /*dont change existing tmpDates but need to add startDate*/
-                if (i == 0) {
-                    dl = cdsDateListAddDatesFreeOld(dl, numTmpDates, tmpDates);
-                    i = numTmpDates;
+                    if (i == 0) {
+                        dl = cdsDateListAddDatesFreeOld(dl, numTmpDates, tmpDates);
+                        i = numTmpDates;
+                    }
+                    --i;
+                    ++totalDates;
+                    tmpDates[i] = startDate;
+                } else {
+                    Validate.isTrue(!stubType.stubAtEnd && stubType.longStub, "stubType != stubAtEnd or stubType != longStub ");
+                    Validate.isTrue(date.isBefore(startDate), "date >= startDate");
+
+                    // the existing date in tmpDates[] should be changed to be the start date
+                    tmpDates[i] = startDate;
                 }
-                --i;
-                ++totalDates;
-                tmpDates[i] = startDate;
+
+                List<LocalDate> datesToAdd = new ArrayList<LocalDate>();
+                for (int k = 0; k < numTmpDates - i; k++) {
+                    datesToAdd.add(tmpDates[i + k]);
+                }
+
+                dl = cdsDateListAddDatesFreeOld(dl, numTmpDates - i, datesToAdd.toArray(new LocalDate[0]));
             } else {
-                assert (!stubType.stubAtEnd && stubType.longStub);
-                assert (date.isBefore(startDate));
-
-                // the existing date in tmpDates[] should be changed to be the start date
-                tmpDates[i] = startDate;
-            }
-
-            List<LocalDate> datesToAdd = new ArrayList<LocalDate>();
-            for (int k = 0; k < numTmpDates - i; k++) {
-                datesToAdd.add(tmpDates[i + k]);
-            }
-
-            dl = cdsDateListAddDatesFreeOld(dl, numTmpDates - i, datesToAdd.toArray(new LocalDate[0]));
-        } else {
             /* back stub - so we start and startDate and work forwards */
-            numIntervals = 0;
-            i = -1;
-            date = startDate;
-            while (date.isBefore(endDate)) {
-                ++i;
-                ++totalDates;
-                if (i == numTmpDates) {
-                    dl = cdsDateListAddDatesFreeOld(dl, numTmpDates, tmpDates);
+                numIntervals = 0;
+                i = -1;
+                date = startDate;
+                while (date.isBefore(endDate)) {
+                    ++i;
+                    ++totalDates;
+                    if (i == numTmpDates) {
+                        dl = cdsDateListAddDatesFreeOld(dl, numTmpDates, tmpDates);
 
-                    i = 0;
+                        i = 0;
+                    }
+
+                    ++numIntervals;
+                    Validate.isTrue(i < numTmpDates, "i >= numTmpDates");
+                    tmpDates[i] = date;
+
+                    multiInterval = new TDateInterval(dateInterval.prd * numIntervals, dateInterval.periodType, 0);
+                    date = dtFwdAny(startDate, multiInterval);
+
                 }
 
-                ++numIntervals;
-                assert (i < numTmpDates);
-                tmpDates[i] = date;
-
-                multiInterval = new TDateInterval(dateInterval.prd * numIntervals, dateInterval.periodType, 0);
-                date = dtFwdAny(startDate, multiInterval);
-
-            }
-
-            assert (totalDates > 0);
-            assert (date.isAfter(endDate) || date.isEqual(endDate));
-            if (date.isEqual(endDate) || totalDates == 1 || stubType.stubAtEnd && !stubType.longStub) {
+                Validate.isTrue(totalDates > 0, "totalDates <= 0");
+                Validate.isTrue(date.isAfter(endDate) || date.isEqual(endDate), "date < endDate");
+                if (date.isEqual(endDate) || totalDates == 1 || stubType.stubAtEnd && !stubType.longStub) {
                 /* don't change existing tmpDates[] but need to add endDate */
-                ++i;
-                ++totalDates;
+                    ++i;
+                    ++totalDates;
 
-                if (i == numTmpDates) {
-                    dl = cdsDateListAddDatesFreeOld(dl, numTmpDates, tmpDates);
-                    i = 0;
-                }
+                    if (i == numTmpDates) {
+                        dl = cdsDateListAddDatesFreeOld(dl, numTmpDates, tmpDates);
+                        i = 0;
+                    }
 
-                tmpDates[i] = endDate;
-            } else {
+                    tmpDates[i] = endDate;
+                } else {
 
-                assert (stubType.stubAtEnd && stubType.longStub);
-                assert (date.isAfter(endDate));
+                    Validate.isTrue(stubType.stubAtEnd && stubType.longStub, "stubType != stubAtEnd or stubType != longStub ");
+                    Validate.isTrue(date.isAfter(endDate), "date < endDate");
 
                /* the existing date in tmpDates[] should be changed to be
                the end date */
-                tmpDates[i] = endDate;
+                    tmpDates[i] = endDate;
 
-            }
+                }
 
             /* now add from tmpDates[0] to tmpDates[i] to the date list */
-            dl = cdsDateListAddDatesFreeOld(dl, i + 1, tmpDates);
-        }
+                dl = cdsDateListAddDatesFreeOld(dl, i + 1, tmpDates);
+            }
 
-        assert (totalDates >= 2);
-        assert (dl.fNumItems == totalDates);
-        return dl;
+            Validate.isTrue(totalDates >= 2, "totalDates < 2");
+            Validate.isTrue(dl.fNumItems == totalDates, "dl.fNumItems != totalDates");
+            return dl;
+        } catch (Exception ex) {
+            logger.error(ex);
+            throw new CdsLibraryException(ex.getMessage());
+        }
     }
 
     public static TDateList cdsDateListAddDatesFreeOld(TDateList dl, int numItems, LocalDate[] array) {

@@ -5,6 +5,7 @@ import com.anand.analytics.isdamodel.domain.TBadDayConvention;
 import com.anand.analytics.isdamodel.domain.TDateInterval;
 import com.anand.analytics.isdamodel.domain.TStubMethod;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
+import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 import org.boris.xlloop.util.Day;
 import org.boris.xlloop.util.ExcelDate;
@@ -100,169 +101,183 @@ public class ExcelFunctions {
         }
     }
 
-    public static TDateInterval cdsStringToDateInterval(final String dateIntervalString) throws Exception {
+    public static TDateInterval cdsStringToDateInterval(final String dateIntervalString) throws CdsLibraryException {
+        try {
+            Pattern pattern = Pattern.compile("^([-+]{0,1})(\\d*)(\\w{1})");
+            Matcher matcher = pattern.matcher(dateIntervalString);
+            if (!(matcher.matches()))
+                throw new CdsLibraryException("StringToDateInterval::Invalid date interval string");
 
-        Pattern pattern = Pattern.compile("^([-+]{0,1})(\\d*)(\\w{1})");
-        Matcher matcher = pattern.matcher(dateIntervalString);
-        if (!(matcher.matches()))
-            throw new CdsLibraryException("StringToDateInterval::Invalid date interval string");
+            //check the first char
+            char[] symbols = new char[]{'+', '-'};
+            Character symbol = null;
+            int exact = Arrays.binarySearch(symbols, dateIntervalString.charAt(0));
+            if (exact >= 0)
+                symbol = dateIntervalString.charAt(0);
 
-        //check the first char
-        char[] symbols = new char[]{'+', '-'};
-        Character symbol = null;
-        int exact = Arrays.binarySearch(symbols, dateIntervalString.charAt(0));
-        if (exact >= 0)
-            symbol = dateIntervalString.charAt(0);
-
-        //Copy digits if any
-        List<Integer> intList = new ArrayList<Integer>();
-        int i;
-        if (exact >= 0) {
-            //start at 1
-            for (i = 1; i < dateIntervalString.length(); i++) {
-                Character idx = dateIntervalString.charAt(i);
-                if (Character.isDigit(idx)) {
-                    intList.add(Character.getNumericValue(idx));
-                } else {
-                    break;
+            //Copy digits if any
+            List<Integer> intList = new ArrayList<Integer>();
+            int i;
+            if (exact >= 0) {
+                //start at 1
+                for (i = 1; i < dateIntervalString.length(); i++) {
+                    Character idx = dateIntervalString.charAt(i);
+                    if (Character.isDigit(idx)) {
+                        intList.add(Character.getNumericValue(idx));
+                    } else {
+                        break;
+                    }
+                }
+            } else {
+                for (i = 0; i < dateIntervalString.length(); i++) {
+                    char idx = dateIntervalString.charAt(i);
+                    if (Character.isDigit(idx)) {
+                        intList.add(Character.getNumericValue(idx));
+                    } else {
+                        break;
+                    }
                 }
             }
-        } else {
-            for (i = 0; i < dateIntervalString.length(); i++) {
+
+            List<Character> periodList = new ArrayList<Character>();
+
+            //Now copy the period
+            while (i < dateIntervalString.length()) {
                 char idx = dateIntervalString.charAt(i);
-                if (Character.isDigit(idx)) {
-                    intList.add(Character.getNumericValue(idx));
-                } else {
-                    break;
+                periodList.add(idx);
+                i++;
+            }
+
+            Validate.isTrue(periodList.size() == 1, "Cannot handle multiple periods");
+
+
+            Collections.reverse(intList);
+            int number = 0;
+            if (intList.size() > 0) {
+                for (int j = intList.size() - 1; j >= 0; j--) {
+                    number += intList.get(j) * Math.pow(10, j);
                 }
+            } else {
+                number = 1;
             }
-        }
 
-        List<Character> periodList = new ArrayList<Character>();
-
-        //Now copy the period
-        while (i < dateIntervalString.length()) {
-            char idx = dateIntervalString.charAt(i);
-            periodList.add(idx);
-            i++;
-        }
-
-        assert (periodList.size() == 1);
-
-
-        Collections.reverse(intList);
-        int number = 0;
-        if (intList.size() > 0) {
-            for (int j = intList.size() - 1; j >= 0; j--) {
-                number += intList.get(j) * Math.pow(10, j);
+            if (exact >= 0) {
+                //signed period
+                if (symbol.equals('-'))
+                    number *= -1;
             }
-        } else {
-            number = 1;
-        }
 
-        if (exact >= 0) {
-            //signed period
-            if (symbol.equals('-'))
-                number *= -1;
+            TDateInterval tDateInterval = TDateInterval.get(number, periodList.get(0));
+            return tDateInterval;
+        } catch(Exception ex) {
+            logger.error(ex);
+            throw new CdsLibraryException(ex.getMessage());
         }
-
-        TDateInterval tDateInterval = TDateInterval.get(number, periodList.get(0));
-        return tDateInterval;
     }
 
     public static TBadDayConvention cdsStringToBadDayConv(final String badDayConvString) {
         return TBadDayConvention.get(badDayConvString.charAt(0));
     }
 
-    public static DayCount cdsStringToDayCountConv(final String dayCountString) {
-        String[] components = dayCountString.split("/");
-        DayCount dayCount;
-        assert (components.length == 2);
+    public static DayCount cdsStringToDayCountConv(final String dayCountString)  throws CdsLibraryException {
+        try {
+            String[] components = dayCountString.split("/");
+            DayCount dayCount;
+            Validate.isTrue(components.length == 2, "Invalid day count convention");
 
-        switch (components[0]) {
-            case "ACT": {
-                switch (components[1]) {
-                    case "360":
-                        dayCount = DayCount.ACT_360;
-                        break;
-                    case "365":
-                        dayCount = DayCount.ACT_365;
-                        break;
-                    case "365F":
-                        dayCount = DayCount.ACT_365F;
-                        break;
-                    case "ACT":
-                        dayCount = DayCount.ACT_ACT;
-                        break;
-                    default:
-                        dayCount = DayCount.ACT_360;
+            switch (components[0]) {
+                case "ACT": {
+                    switch (components[1]) {
+                        case "360":
+                            dayCount = DayCount.ACT_360;
+                            break;
+                        case "365":
+                            dayCount = DayCount.ACT_365;
+                            break;
+                        case "365F":
+                            dayCount = DayCount.ACT_365F;
+                            break;
+                        case "ACT":
+                            dayCount = DayCount.ACT_ACT;
+                            break;
+                        default:
+                            dayCount = DayCount.ACT_360;
+                    }
+                    break;
+
                 }
-                break;
+                case "B30":
+                    dayCount = DayCount.B30_360;
+                    break;
+                case "B30E":
+                    dayCount = DayCount.B30E_360;
+                    break;
+                case "EFF":
+                    dayCount = DayCount.CDS_EFFECTIVE_RATE;
+                    break;
+
+                default:
+                    dayCount = DayCount.ACT_360;
 
             }
-            case "B30":
-                dayCount = DayCount.B30_360;
-                break;
-            case "B30E":
-                dayCount = DayCount.B30E_360;
-                break;
-            case "EFF":
-                dayCount = DayCount.CDS_EFFECTIVE_RATE;
-                break;
 
-            default:
-                dayCount = DayCount.ACT_360;
-
+            return dayCount;
+        } catch (Exception ex) {
+            logger.error(ex);
+            throw new CdsLibraryException(ex.getMessage());
         }
-
-        return dayCount;
     }
 
-    public static TStubMethod cdsStringToStubMethod(final String name) {
-        TStubMethod stubMethod = new TStubMethod();
+    public static TStubMethod cdsStringToStubMethod(final String name) throws CdsLibraryException {
+        try {
+            TStubMethod stubMethod = new TStubMethod();
 
-        if (name.contains("/")) {
-            String[] components = name.split("/");
-            assert (components.length == 2);
-            assert (components[0].length() == 1);
-            assert (components[1].length() == 1);
+            if (name.contains("/")) {
+                String[] components = name.split("/");
+                Validate.isTrue(components.length == 2, "Invalid stub method");
+                Validate.isTrue(components[0].length() == 1, "Invalid stub method");
+                Validate.isTrue(components[1].length() == 1, "Invalid stub method");
 
-            char first = components[0].toUpperCase().charAt(0);
-            char second = components[1].toUpperCase().charAt(0);
+                char first = components[0].toUpperCase().charAt(0);
+                char second = components[1].toUpperCase().charAt(0);
 
-            switch (first) {
-                case 'F':
-                    stubMethod.stubAtEnd = false;
-                    break;
-                case 'B':
-                    stubMethod.stubAtEnd = true;
-                    break;
-                default:
-                    stubMethod.stubAtEnd = false;
+                switch (first) {
+                    case 'F':
+                        stubMethod.stubAtEnd = false;
+                        break;
+                    case 'B':
+                        stubMethod.stubAtEnd = true;
+                        break;
+                    default:
+                        stubMethod.stubAtEnd = false;
+                }
+
+                switch (second) {
+                    case 'S':
+                        stubMethod.longStub = false;
+                        break;
+                    case 'L':
+                        stubMethod.longStub = true;
+                        break;
+                    default:
+                        stubMethod.longStub = false;
+                }
+
+                return stubMethod;
+            } else {
+                switch (name) {
+                    case "F":
+                        stubMethod.stubAtEnd = false;
+                        break;
+                    case "B":
+                        stubMethod.stubAtEnd = true;
+                }
+
+                return stubMethod;
             }
-
-            switch (second) {
-                case 'S':
-                    stubMethod.longStub = false;
-                    break;
-                case 'L':
-                    stubMethod.longStub = true;
-                    break;
-                default:
-                    stubMethod.longStub = false;
-            }
-
-            return stubMethod;
-        } else {
-            switch(name) {
-                case "F":
-                    stubMethod.stubAtEnd = false;
-                    break;
-                case "B":
-                    stubMethod.stubAtEnd = true;
-            }
-
-            return stubMethod;
+        } catch (Exception ex) {
+            logger.error(ex);
+            throw new CdsLibraryException(ex.getMessage());
         }
     }
 
