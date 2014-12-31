@@ -8,6 +8,7 @@ import com.anand.analytics.isdamodel.date.HolidayCalendar;
 import com.anand.analytics.isdamodel.date.HolidayCalendarFactory;
 import com.anand.analytics.isdamodel.domain.*;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
+import com.anand.analytics.isdamodel.ir.IRCurveBuilder;
 import com.anand.analytics.isdamodel.utils.*;
 import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
@@ -1009,12 +1010,12 @@ public class CdsFunctionLibrary {
             if (ExcelFunctions.cdsDateIntervalToFreq(fixedIVL, result).equals(ReturnStatus.FAILURE)) {
                 throw new CdsLibraryException("Unable to convert date interval to frequency");
             }
-            final double fixedFreq = result.get();
+            final long fixedFreq = (long) result.get();
 
             if(ExcelFunctions.cdsDateIntervalToFreq(floatIVL, result).equals(ReturnStatus.FAILURE)) {
                 throw new CdsLibraryException("Unable to convert date interval to frequency");
             }
-            final double floatFreq = result.get();
+            final long floatFreq = (long) result.get();
 
             //HolidayCalendarFactory holidayCalendarFactory = (HolidayCalendarFactory) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
             HolidayCalendar holidayCalendar = holidayCalendarFactory.getCalendar(calendar);
@@ -1060,6 +1061,8 @@ public class CdsFunctionLibrary {
                     }
                 }
             }
+
+            IRCurveBuilder.buildIRZeroCurve(valueDate, types, endDates, rates, mmDCC, fixedFreq, floatFreq, fixedDCC, floadDCC, badDayConv, holidayCalendar);
 
             return new XLNum(0);
         } catch (Exception ex) {

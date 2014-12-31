@@ -1,12 +1,7 @@
 package com.anand.analytics.isdamodel.domain;
 
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
-import com.anand.analytics.isdamodel.utils.CdsUtils;
-import com.anand.analytics.isdamodel.utils.DayCount;
-import com.anand.analytics.isdamodel.utils.DayCountBasis;
-import com.anand.analytics.isdamodel.utils.DoubleHolder;
-import com.anand.analytics.isdamodel.utils.IntHolder;
-import com.anand.analytics.isdamodel.utils.ReturnStatus;
+import com.anand.analytics.isdamodel.utils.*;
 import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
@@ -84,7 +79,7 @@ public class TRateFunctions {
         double rate, time;
 
         rate = cdsZeroRate(zeroCurve, date);
-        time = (zeroCurve.baseDate.periodUntil(date, ChronoUnit.DAYS)) / 365.;
+        time = (zeroCurve.getBaseDate().periodUntil(date, ChronoUnit.DAYS)) / 365.;
         zeroPrice = Math.exp(-rate * time);
         return zeroPrice;
     }
@@ -99,10 +94,10 @@ public class TRateFunctions {
 
             DoubleHolder rate = new DoubleHolder();
             Validate.notNull(zeroCurve, "zeroCurve is null");
-            Validate.isTrue (zeroCurve.dates.length > 0, "zeroCurve.dates.length == 0");
+            Validate.isTrue (zeroCurve.getDates().length > 0, "zeroCurve.dates.length == 0");
 
             if (CdsUtils.binarySearchLong(date,
-                    zeroCurve.dates,
+                    zeroCurve.getDates(),
                     exact,
                     lo,
                     hi).equals(ReturnStatus.FAILURE)) {
@@ -169,8 +164,8 @@ public class TRateFunctions {
 
             t = zeroCurve.baseDate.periodUntil(date, ChronoUnit.DAYS);
 
-            Validate.isTrue (t > t1, "t <= t1");
-            Validate.isTrue (t2 > t1, " t2 <= t1");
+            Validate.isTrue(t > t1, "t <= t1");
+            Validate.isTrue(t2 > t1, " t2 <= t1");
 
             if (zcRateCC(zeroCurve, lo, z1).equals(ReturnStatus.FAILURE)) {
                 logger.error("Error in calculating interp rate");

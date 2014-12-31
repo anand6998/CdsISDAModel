@@ -21,7 +21,7 @@ public enum TInstrumentType {
 
     public static TInstrumentType getInstrumentType(String str) throws CdsLibraryException {
         String lStr = str.toLowerCase();
-        switch(str) {
+        switch(lStr) {
             case "m":
                 return M;
             case "s":

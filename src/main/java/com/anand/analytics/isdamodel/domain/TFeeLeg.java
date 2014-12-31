@@ -18,10 +18,7 @@ import java.util.Set;
 import static com.anand.analytics.isdamodel.domain.TDateFunctions.*;
 
 //TODO - move this class
-class TMonthDayYear {
-    int year, month, day;
-    public boolean isLeap;
-}
+
 
 /**
  * Created by Anand on 10/21/2014.

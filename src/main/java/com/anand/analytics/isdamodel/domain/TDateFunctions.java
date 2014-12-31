@@ -291,6 +291,14 @@ public class TDateFunctions {
         return ReturnStatus.SUCCESS;
     }
 
+    public static LocalDate dateFromDateAndOffset(LocalDate oldDate,
+                                                  TDateInterval tDateInterval,
+                                                  int index) {
+        TDateInterval compoundInterval = tDateInterval;
+        compoundInterval.prd *= index;
+
+        return dtFwdAny(oldDate, compoundInterval);
+    }
 
     public static LocalDate dtFwdAny
             (LocalDate startDate,      /* (I) date */
@@ -548,4 +556,9 @@ public class TDateFunctions {
         }
     }
 
+    public static boolean IS_BETWEEN(LocalDate x, LocalDate a, LocalDate b) {
+        return a.isBefore(b)
+               ? (x.isEqual(a) || x.isAfter(a)) && (x.isEqual(b) || x.isBefore(b))
+               : (x.isEqual(b) || x.isAfter(b)) && (x.isEqual(a) || x.isBefore(a));
+    }
 }

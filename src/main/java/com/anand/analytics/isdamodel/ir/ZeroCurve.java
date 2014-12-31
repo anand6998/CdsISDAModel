@@ -1,8 +1,13 @@
-package com.anand.analytics.isdamodel.domain;
+package com.anand.analytics.isdamodel.ir;
 
+import com.anand.analytics.isdamodel.domain.TCurve;
+import com.anand.analytics.isdamodel.domain.TDateFunctions;
+import com.anand.analytics.isdamodel.domain.TRateFunctions;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.utils.*;
 
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.Validate;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.temporal.ChronoUnit;
 
@@ -25,22 +30,84 @@ public class ZeroCurve {
     private DayCountBasis dayCountBasis;
     private DayCount dayCount;
 
+    private int fNumItems;
+
+
     public ZeroCurve(LocalDate valueDate, DayCountBasis dayCountBasis, DayCount dayCount) {
         this.valueDate = valueDate;
         this.dayCountBasis = dayCountBasis;
         this.dayCount = dayCount;
-
 
         rates = new ArrayList<>();
         dates = new ArrayList<>();
         discs = new ArrayList<>();
     }
 
-    public ZeroCurve(TCurve curve) {
-        this(curve.getBaseDate(), curve.getBasis(), curve.getDayCountConv());
+    public LocalDate getValueDate() {
+        return valueDate;
     }
 
-    public void addRate(LocalDate date, double rate, double disc) throws CdsLibraryException {
+    public double[] getRates() {
+        return ArrayUtils.toPrimitive(rates.toArray(new Double[0]));
+    }
+
+    public LocalDate[] getDates() {
+        return (dates.toArray(new LocalDate[0]));
+    }
+
+    public double[] getDiscs() {
+        return ArrayUtils.toPrimitive(discs.toArray(new Double[0]));
+    }
+
+    public DayCountBasis getDayCountBasis() {
+        return dayCountBasis;
+    }
+
+    public DayCount getDayCount() {
+        return dayCount;
+    }
+
+    public int getfNumItems() {
+        return fNumItems;
+    }
+
+
+    public ZeroCurve(TCurve curve) throws CdsLibraryException {
+        this(curve.getBaseDate(), curve.getBasis(), curve.getDayCountConv());
+        for (int i = 0; i < curve.getDates().length; i++)
+            addRate(curve.getDates()[i], curve.getRates()[i]);
+
+        this.fNumItems = curve.getDates().length;
+    }
+
+    public void addRates(LocalDate[] dates, double[] rates, DayCount dayCount) throws CdsLibraryException {
+        try {
+            Validate.isTrue(dates.length == rates.length, "dates.length != rates.length");
+            for (int i = 0; i < dates.length; i++) {
+                addGenRate(dates[i], rates[i], DayCountBasis.SIMPLE_BASIS, dayCount);
+            }
+
+            this.fNumItems = dates.length;
+        } catch (Exception ex) {
+            logger.error(ex);
+            throw new CdsLibraryException(ex.getMessage());
+        }
+    }
+
+    private void addGenRate(LocalDate date, double rate, DayCountBasis basis, DayCount dayCount) throws CdsLibraryException {
+        if (basis.equals(this.dayCountBasis) && dayCount.equals(this.dayCount)) {
+            addRate(date, rate);
+            return;
+        }
+
+        cdsRateToDiscount(rate, valueDate, date, dayCount, basis);
+    }
+
+    private void addRate(LocalDate date, double rate) throws CdsLibraryException {
+        double discount = computeDiscount(date, rate);
+        addRate(date, rate, discount);
+    }
+    private void addRate(LocalDate date, double rate, double disc) throws CdsLibraryException {
         /**
          * Make sure date not already in list
          *
@@ -99,6 +166,10 @@ public class ZeroCurve {
 
         }
 
+    }
+
+    public TCurve toTCurve() throws CdsLibraryException {
+        return new TCurve(valueDate, dates.toArray(new LocalDate[0]), ArrayUtils.toPrimitive( rates.toArray(new Double[0])), dayCountBasis, dayCount);
     }
 
     private double computeDiscount(LocalDate date, double rate) throws CdsLibraryException {

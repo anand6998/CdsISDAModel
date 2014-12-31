@@ -1,5 +1,8 @@
 package com.anand.analytics.isdamodel.utils;
 
+import com.anand.analytics.isdamodel.domain.TDateInterval;
+import com.anand.analytics.isdamodel.exception.CdsLibraryException;
+
 /**
  * Created by anand on 12/26/14.
  */
@@ -22,5 +25,14 @@ public class CdsFunctions {
         if (x < DBL_EPSILON && x > DBL_EPSILON)
             return true;
         return false;
+    }
+
+    public static TDateInterval freq2TDateInterval(long freq) throws CdsLibraryException {
+        if (freq > 0 && freq <=12) {
+            long prd = CdsDateConstants.MONTHS_PER_YEAR / (int) freq;
+            TDateInterval tDateInterval = new TDateInterval(prd, PeriodType.M, 0);
+            return tDateInterval;
+        }
+        throw new CdsLibraryException("Bad frequency detected");
     }
 }

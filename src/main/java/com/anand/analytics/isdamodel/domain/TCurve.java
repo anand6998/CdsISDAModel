@@ -1,18 +1,18 @@
 package com.anand.analytics.isdamodel.domain;
 
 
-import com.anand.analytics.isdamodel.utils.DayCount;
-import com.anand.analytics.isdamodel.utils.DayCountBasis;
-import com.anand.analytics.isdamodel.utils.DoubleHolder;
-import com.anand.analytics.isdamodel.utils.ReturnStatus;
+import com.anand.analytics.isdamodel.exception.CdsLibraryException;
+import com.anand.analytics.isdamodel.utils.*;
 import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
+
+import java.io.Serializable;
 
 
 /**
  * Created by Anand on 10/21/2014.
  */
-public class TCurve {
+public class TCurve implements Serializable, Cloneable {
     final static Logger logger = Logger.getLogger(TCurve.class);
     LocalDate baseDate;
     LocalDate[] dates;
@@ -41,7 +41,9 @@ public class TCurve {
         return dayCountConv;
     }
 
-    public TCurve(LocalDate baseDate, LocalDate[] dates, double[] rates, DayCountBasis basis, DayCount dayCountConv) throws Exception {
+    private TCurve() {}
+
+    public TCurve(LocalDate baseDate, LocalDate[] dates, double[] rates, DayCountBasis basis, DayCount dayCountConv) throws CdsLibraryException {
         this.baseDate = baseDate;
         this.dates = dates;
         this.rates = rates;
@@ -51,20 +53,20 @@ public class TCurve {
         check();
     }
 
-    private void check() throws Exception {
+    private void check() throws CdsLibraryException {
         if (rates.length != dates.length)
-            throw new Exception("Rates and dates arrays must be of same length");
+            throw new CdsLibraryException("Rates and dates arrays must be of same length");
 
         for (int i = 1; i < dates.length; i++) {
             if (dates[i - 1].isAfter(dates[i]))
-                throw new Exception("Invalid Curve dates");
+                throw new CdsLibraryException("Invalid Curve dates");
 
             if (cdsRateValid(this.rates[i],
                     this.baseDate,
                     this.dates[i],
                     this.dayCountConv,
                     this.basis).equals(ReturnStatus.FAILURE)) {
-                throw new Exception("Rate implies non-positive discount factor");
+                throw new CdsLibraryException("Rate implies non-positive discount factor");
             }
         }
     }
@@ -112,5 +114,22 @@ public class TCurve {
 
     public void setBasis(DayCountBasis basis) {
         this.basis = basis;
+    }
+
+    public TCurve clone() {
+        TCurve tCurve = new TCurve();
+        tCurve.baseDate = this.baseDate;
+        tCurve.basis = this.basis;
+        tCurve.dayCountConv = this.dayCountConv;
+
+        tCurve.dates = new LocalDate[this.dates.length];
+        tCurve.rates = new double[this.rates.length];
+
+        for (int i = 0; i < dates.length; i++) {
+            tCurve.dates[i] = this.dates[i];
+            tCurve.rates[i] = this.rates[i];
+        }
+
+        return tCurve;
     }
 }
