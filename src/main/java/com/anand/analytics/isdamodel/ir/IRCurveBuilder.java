@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.anand.analytics.isdamodel.domain.TDateFunctions.IS_BETWEEN;
+import static com.anand.analytics.isdamodel.domain.TDateFunctions.cdsDayCountFraction;
 import static com.anand.analytics.isdamodel.domain.TDateFunctions.dateFromDateAndOffset;
 
 /**
@@ -357,12 +358,173 @@ public class IRCurveBuilder {
                         badDayConvention,
                         calendar
                 );
+                /**
+                 * Adjust matDate to be a good business day
+                 */
+                LocalDate adjustedMatDate = calendar.getNextBusinessDay(matDate, badDayConvention);
+
+                /**
+                 * Add rate implied by cash flow list to the zeroCurve
+                 */
+                zcAddCashFlowList(zeroCurve,
+                        cashFlowList,
+                        price,
+                        adjustedMatDate,
+                        interpType,
+                        tInterpData);
+
             }
         } catch (Exception ex) {
             logger.error(ex);
             return ReturnStatus.FAILURE;
         }
         return null;
+    }
+
+    /**
+     * Adds information represented by a list of cash flows to a zero curve
+     * Any cash flows which are already covered by the zero curve are
+     * discounted at rates derived from the zero curve
+     *
+     * Cash flows beyond the zero curve imply discount factors, which are added to the zero curve
+     * If there is more than one such cash flow, several points are added to the curve,
+     * which are calculated by using an iterative root-finding secant method
+     * where the discount factor for the last cash flow is guessed (and the other discount factors are
+     * implied by interpolation) where the current price = net present value of all cash flows
+     *
+     * The zero curve is updated to reflect the cash flows. A point is added for every cash flow, if
+     * not already in ZCurve list. For linear forwards, all interpolated points are returned, e.g.
+     * for 1 month forwards in an annual market, monthly points will be returned, not just yearly.
+     *
+     * Notes: date may be set for non-linear forward interpolation methods to a date to be added to the
+     * zero curve. This allows production of a curve with "nice" dates
+     *
+     * @param zc
+     * @param cfl
+     * @param price
+     * @param date
+     * @param interpType
+     * @param interpData
+     */
+    private static void zcAddCashFlowList(ZeroCurve zc,
+                                          TCashFlow[] cfl,
+                                          double price,
+                                          LocalDate date,
+                                          TInterpType interpType,
+                                          TInterpData interpData)
+        throws CdsLibraryException {
+
+        int firstUncoverd; /* index in cfl of 1st uncovered c.f */
+
+        /* add at last c.f if not set up */
+        if (date ==  null)
+            date = cfl[cfl.length - 1].getfDate();
+
+        if (zc.getfNumItems() <= 0) {
+            firstUncoverd = 0;
+            interpType = TInterpType.LINEAR_INTERP;
+        } else {
+            /* last date in zCurve */
+            LocalDate lastZcDate = zc.getDates()[zc.getfNumItems() - 1];
+            if (date.isEqual(lastZcDate) || date.isBefore(lastZcDate)) {
+                throw new CdsLibraryException("Date to add already covered");
+            }
+
+            firstUncoverd = cfl.length - 1;
+            if (firstUncoverd < 0 ||
+                    cfl[firstUncoverd].getfDate().isBefore(lastZcDate)) {
+                throw new CdsLibraryException("No cash flows in list beyond zeroCurve - nothing to add");
+
+            }
+
+            while (firstUncoverd >= 0 && cfl[firstUncoverd].getfDate().isAfter(lastZcDate))
+                firstUncoverd--;    // decrement until covered
+
+            //move upto first not covered
+            firstUncoverd++;
+
+            //Calc npv of covered cash flows
+            if (firstUncoverd > 0) {
+                DoubleHolder sumNpv = new DoubleHolder();
+                zcPresentValueCFL(zc, cfl, 0, firstUncoverd - 1, interpType, interpData);
+            }
+
+
+        }
+
+    }
+
+    /**
+     * Calculate net present value of cash flow list
+     *
+     * @param zc
+     * @param cfl
+     * @param iLo
+     * @param iHi
+     * @param interpType
+     * @param interpData
+     *
+     * @return
+     */
+    private static double zcPresentValueCFL(ZeroCurve zc,
+                                                  TCashFlow[] cfl,
+                                                  int iLo,
+                                                  int iHi,
+                                                  TInterpType interpType,
+                                                  TInterpData interpData
+                                                  ) throws CdsLibraryException {
+
+        double sumPv = 0.0;
+        int i;                          //loops over cash flows [iLo..iHi]
+        int j = 0;                      //loops over zc entries
+
+        if (iLo < 0) {
+            throw new CdsLibraryException("iLo < 0");
+        }
+        if (iLo > iHi)
+            throw new CdsLibraryException("iLo > iHi");
+
+        //TODO - check this
+        if (cfl.length <= iHi) {
+            throw new CdsLibraryException("cfl.length <= iHi");
+        }
+
+        for (i = iLo; i <= iHi; i++) {
+            double amt = cfl[i].getAmount();
+            LocalDate date = cfl[i].getfDate();
+
+            double pv;
+            //push j upto cf date
+            while (j < zc.getfNumItems() && zc.getDates()[j].isBefore(date))
+                j++;
+
+            if (j < zc.getfNumItems() && zc.getDates()[j].isEqual(date)) {
+                //found exact date in zc
+                pv = zc.getDiscs()[j] * amt;
+            } else {
+                pv = zcPresentValue(zc, amt, date, interpType, interpData);
+            }
+        }
+        return sumPv;
+    }
+
+    /**
+     * Calculates the npv of a cash flow (a payment at a given date in the future)
+     * @param zc
+     * @param price
+     * @param date
+     * @param interpType
+     * @param interpData
+     * @return
+     * @throws CdsLibraryException
+     */
+    private static double zcPresentValue(ZeroCurve zc,
+                                         double price,
+                                         LocalDate date,
+                                         TInterpType interpType,
+                                         TInterpData interpData)
+    throws CdsLibraryException {
+        return 0;
     }
 
     private static TCashFlow[] zcGetSwapCashFlowList(LocalDate valueDate,
@@ -392,6 +554,25 @@ public class IRCurveBuilder {
                 badDayConvention,
                 calendar);
 
+        tCashFlows = new TCashFlow[dateList.length];
+        LocalDate prevDate = valueDate;
+        for (int i = 0; i < dateList.length; i++) {
+            LocalDate cDate = dateList[i];
+
+            DoubleHolder yearFraction = new DoubleHolder();
+            if(cdsDayCountFraction(prevDate, cDate, dayCountConv, yearFraction).equals(ReturnStatus.FAILURE))
+                throw new CdsLibraryException("Error calculating dayCountFraction");
+            double amount = rate * yearFraction.get();
+            TCashFlow tCashFlow = new TCashFlow(cDate, amount);
+            tCashFlows[i] = tCashFlow;
+            prevDate = cDate;
+        }
+
+        /** Add principal */
+        double amount = tCashFlows[tCashFlows.length - 1].getAmount();
+        amount += 1.0;
+
+        tCashFlows[tCashFlows.length - 1].setAmount(amount);
         return new TCashFlow[0];
     }
 
