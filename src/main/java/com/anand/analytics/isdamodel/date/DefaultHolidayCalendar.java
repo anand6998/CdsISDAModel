@@ -54,5 +54,12 @@ public class DefaultHolidayCalendar implements HolidayCalendar {
         return holidayCalendarFunctions.getNextBusinessDay(input, badDayConvention, weekendDays, holidays);
     }
 
+    @Override
+    public LocalDate[] adjustBusinessDays(LocalDate[] inputs, TBadDayConvention badDayConvention) throws CdsLibraryException {
+        LocalDate[] retList = new LocalDate[inputs.length];
+        for (int idx = 0; idx < inputs.length; idx++)
+            retList[idx] = getNextBusinessDay(inputs[idx], badDayConvention);
 
+        return retList;
+    }
 }

@@ -23,6 +23,14 @@ public class TDateInterval {
                 '}';
     }
 
+    public void setPrd(long prd) {
+        this.prd = prd;
+    }
+
+    public void setPeriodType(PeriodType periodType) {
+        this.periodType = periodType;
+    }
+
     public TDateInterval(long prd, PeriodType periodType, int flag) {
         this.prd = prd;
         this.periodType = periodType;

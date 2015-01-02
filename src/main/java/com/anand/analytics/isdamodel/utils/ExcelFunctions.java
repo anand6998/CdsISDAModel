@@ -26,20 +26,8 @@ public class ExcelFunctions {
     public final static String DEFAULT_HOLIDAY_CALENDAR = "None";
 
     private final static Logger logger = Logger.getLogger(ExcelFunctions.class);
-    public static ReturnStatus cdsDateIntervalToFreq(final TDateInterval interval, DoubleHolder freq) {
-        DoubleHolder years = new DoubleHolder();
-        if (interval.getIntervalInYears(years).equals(ReturnStatus.FAILURE))
-            return ReturnStatus.FAILURE;
 
-        if (years.get() > 0.)
-        {
-            freq.set(1. / years.get());
-            return ReturnStatus.SUCCESS;
-        }
 
-        logger.error("interval is zero");
-        return ReturnStatus.FAILURE;
-    }
 
     public static LocalDate xlDateToLocalDateTime(final double anXLDate) {
         Day aDay = Day.fromExcelDate(anXLDate);

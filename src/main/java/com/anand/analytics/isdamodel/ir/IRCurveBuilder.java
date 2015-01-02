@@ -4,6 +4,7 @@ import com.anand.analytics.isdamodel.date.HolidayCalendar;
 import com.anand.analytics.isdamodel.domain.*;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.utils.*;
+import com.sun.org.apache.bcel.internal.generic.RETURN;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
@@ -48,7 +49,7 @@ public class IRCurveBuilder {
             if (!validInstruments.contains(instr))
                 throw new CdsLibraryException("Invalid InstrumentType");
             TInstrumentType instrumentType = TInstrumentType.getInstrumentType(instr);
-            switch(instrumentType) {
+            switch (instrumentType) {
                 case M:
                     cashDates.add(dates[i]);
                     cashRates.add(rates[i]);
@@ -65,8 +66,8 @@ public class IRCurveBuilder {
         final LocalDate[] cashDatesArr = cashDates.toArray(new LocalDate[0]);
         final LocalDate[] swapDatesArr = swapDates.toArray(new LocalDate[0]);
 
-        final double[] cashRatesArr = ArrayUtils.toPrimitive( cashRates.toArray(new Double[0]));
-        final double[] swapRatesArr = ArrayUtils.toPrimitive( swapRates.toArray(new Double[0]));
+        final double[] cashRatesArr = ArrayUtils.toPrimitive(cashRates.toArray(new Double[0]));
+        final double[] swapRatesArr = ArrayUtils.toPrimitive(swapRates.toArray(new Double[0]));
 
         /* Cash instruments */
         ZeroCurve zCurveCash = new ZeroCurve(valueDate, DayCountBasis.ZC_DEFAULT_BASIS, DayCount.ACT_365F);
@@ -90,17 +91,17 @@ public class IRCurveBuilder {
     }
 
     private static TCurve buildZeroCurveSwap(ZeroCurve zeroCurve,
-                                           TCurve discountZC,
-                                           LocalDate swapDates[],
-                                           double swapRates[],
-                                           int numSwaps,
-                                           long fixedSwapFreq,
-                                           long floatSwapFreq,
-                                           DayCount fixedSwapDayCount,
-                                           DayCount floatSwapDayCount,
-                                           int fwdLength,
-                                           TBadDayConvention badDayConvention,
-                                           HolidayCalendar calendar) throws CdsLibraryException {
+                                             TCurve discountZC,
+                                             LocalDate swapDates[],
+                                             double swapRates[],
+                                             int numSwaps,
+                                             long fixedSwapFreq,
+                                             long floatSwapFreq,
+                                             DayCount fixedSwapDayCount,
+                                             DayCount floatSwapDayCount,
+                                             int fwdLength,
+                                             TBadDayConvention badDayConvention,
+                                             HolidayCalendar calendar) throws CdsLibraryException {
 
         TStubPos stubPos = TStubPos.DEFAULT_AUTO;
         TCurve tcSwaps = null;
@@ -133,7 +134,7 @@ public class IRCurveBuilder {
         List<LocalDate> offsetSwapDatesList = new ArrayList<>();
         List<Double> offsetSwapRatesList = new ArrayList<>();
 
-        while(numSwaps > 0 && swapDates[offset].isBefore(lastStubDate)) {
+        while (numSwaps > 0 && swapDates[offset].isBefore(lastStubDate)) {
             offset++;
             numSwaps--;
 
@@ -148,7 +149,7 @@ public class IRCurveBuilder {
         }
 
         LocalDate[] offsetSwapDates = offsetSwapDatesList.toArray(new LocalDate[0]);
-        double[] offsetSwapRates = ArrayUtils.toPrimitive( offsetSwapRatesList.toArray(new Double[0]));
+        double[] offsetSwapRates = ArrayUtils.toPrimitive(offsetSwapRatesList.toArray(new Double[0]));
         //endregion
 
         TInterpData tInterpData = null;
@@ -187,7 +188,8 @@ public class IRCurveBuilder {
                                    long floatSwapFreq,
                                    DayCount fixedSwapDayCount,
                                    DayCount floatSwapDayCount,
-                                   TInterpType flatForwards,
+                                   TInterpType interpType,
+
                                    TInterpData tInterpData,
                                    TBadDayList tBadDayList,
                                    TBadDayConvention badDayConvention,
@@ -219,19 +221,302 @@ public class IRCurveBuilder {
             }
             Validate.notNull(swapDates, "swapDates == null");
 
+            double[] swapRates = inRates;
+            boolean oneAlreadyAdded = false;
+
+            /**
+             * Add individual swap instruments
+             */
+            for (int i = 0; i < swapDates.length; i++) {
+                TSwapDate tSwapDate = swapDates[i];
+                /**
+                 * Add those beyond stub zero curve
+                 */
+                if (tSwapDate.getAdjustedDate().isAfter(zeroCurve.getDates()[zeroCurve.getfNumItems() - 1])) {
+                    /**
+                     * Check if optimization ok. Note linear forwards not OK because
+                     * they must include intermed. forwards
+                     */
+                    if (oneAlreadyAdded &&
+                            discountZC == null &&
+                            swapRates[i - 1] != 0 &&
+                            swapDates[i - 1].getAdjustedDate().isEqual(zeroCurve.getDates()[zeroCurve.getfNumItems() - 1]) &&
+                            tSwapDate.getPreviousDate().isEqual(swapDates[i - 1].getOriginalDate()) &&
+                            tSwapDate.isOnCycle() &&
+                            !(interpType.equals(TInterpType.LINEAR_FORWARDS))) {
+                        /**
+                         * Optimization - compute from last
+                         */
+                    } else {
+                        ReturnStatus status = zcAddSwap(zeroCurve,
+                                discountZC,
+                                1.0,
+                                tSwapDate.getOriginalDate(),
+                                tSwapDate.isOnCycle(),
+                                swapRates[i],
+                                fixedSwapFreq,
+                                floatSwapFreq,
+                                fixedSwapDayCount,
+                                floatSwapDayCount,
+                                interpType,
+                                tInterpData,
+                                tBadDayList,
+                                badDayConvention,
+                                stubPos,
+                                calendar);
+                        if (status.equals(ReturnStatus.FAILURE))
+                            throw new CdsLibraryException("Error adding swap with original date " + tSwapDate.getOriginalDate());
+
+                        oneAlreadyAdded = true;
+                    }
+                }
+            }
+
         } catch (Exception ex) {
             logger.error(ex);
             throw new CdsLibraryException(ex.getMessage());
         }
     }
 
-    private static TSwapDate[] swapDatesNewFromOriginal(LocalDate valueDate,
-                                                       long freq,
-                                                       LocalDate[] swapDates,
-                                                       int numDates,
-                                                       TBadDayList tBadDayList,
+    /**
+     * Adds a single swap instrument to a ZCurve
+     * <p/>
+     * ZCurve is updated to contain swap information (with points at each of the coupon dates,
+     * as well as maturity date)
+     *
+     * @param zeroCurve
+     * @param discountZC
+     * @param price
+     * @param matDate
+     * @param onCycle
+     * @param rate
+     * @param fixedSwapFreq
+     * @param floatSwapFreq
+     * @param fixedSwapDayCount
+     * @param floatSwapDayCount
+     * @param interpType
+     * @param tInterpData
+     * @param tBadDayList
+     * @param badDayConvention
+     * @param stubPos
+     * @param calendar
+     * @return
+     */
+    private static ReturnStatus zcAddSwap(ZeroCurve zeroCurve,
+                                          TCurve discountZC,
+                                          double price,
+                                          LocalDate matDate,
+                                          boolean onCycle,
+                                          double rate,
+                                          long fixedSwapFreq,
+                                          long floatSwapFreq,
+                                          DayCount fixedSwapDayCount,
+                                          DayCount floatSwapDayCount,
+                                          TInterpType interpType,
+                                          TInterpData tInterpData,
+                                          TBadDayList tBadDayList,
+                                          TBadDayConvention badDayConvention,
+                                          TStubPos stubPos,
+                                          HolidayCalendar calendar) {
+        try {
+            /**
+             * If floating side at par
+             */
+            if (discountZC == null) {
+                boolean isEndStub;
+                /**
+                 * Here we must pass in the unadjusted matDate, so that the
+                 * cashflow dates are correctly generated
+                 */
+
+                TDateInterval ivl = CdsFunctions.cdsFreq2TDateInterval(fixedSwapFreq);
+                if (onCycle) {
+                    isEndStub = true;
+                } else {
+                    BooleanHolder isEndStubHolder = new BooleanHolder(false);
+                    if (CdsFunctions.cdsIsEndStub(zeroCurve.getValueDate(),
+                            matDate,
+                            ivl,
+                            stubPos,
+                            isEndStubHolder).equals(ReturnStatus.FAILURE)) {
+                        logger.error("Error calculating endStub");
+                        return ReturnStatus.FAILURE;
+                    }
+
+                    isEndStub = isEndStubHolder.get();
+                }
+
+                TCashFlow[] cashFlowList = zcGetSwapCashFlowList(
+                        zeroCurve.getValueDate(),
+                        matDate,
+                        isEndStub,
+                        rate,
+                        ivl,
+                        fixedSwapDayCount,
+                        tBadDayList,
+                        badDayConvention,
+                        calendar
+                );
+            }
+        } catch (Exception ex) {
+            logger.error(ex);
+            return ReturnStatus.FAILURE;
+        }
+        return null;
+    }
+
+    private static TCashFlow[] zcGetSwapCashFlowList(LocalDate valueDate,
+                                                     LocalDate matDate,
+                                                     boolean stubAtEnd,
+                                                     double rate,
+                                                     TDateInterval interval,
+                                                     DayCount dayCountConv,
+                                                     TBadDayList badDayList,
+                                                     TBadDayConvention badDayConvention,
+                                                     HolidayCalendar calendar) throws CdsLibraryException {
+        TCashFlow[] tCashFlows;
+        if (rate == 0.0) {
+            tCashFlows = new TCashFlow[1];
+            double amount = 1;
+            LocalDate adjustedDate = calendar.getNextBusinessDay(matDate, badDayConvention);
+            TCashFlow tCashFlow = new TCashFlow(adjustedDate, amount);
+            tCashFlows[0] = tCashFlow;
+            return tCashFlows;
+        }
+
+        LocalDate[] dateList = zcGetSwapCouponDateList(valueDate,
+                matDate,
+                stubAtEnd,
+                interval,
+                badDayList,
+                badDayConvention,
+                calendar);
+
+        return new TCashFlow[0];
+    }
+
+    /**
+     * Makes a date list for all coupons associated w/ a swap instrument
+     *
+     * Only glitch is possible inclusion of a stub date, which is necessary if the
+     * maturity date isnt an integral number of frequency intervales away, e.g. a
+     * swap date 5 years and 1 month from the value date, which would have a stub
+     * date 1 month from now, followed by coupons every year from then
+     *
+     * R
+     * @param valueDate
+     * @param matDate
+     * @param stubAtEnd
+     * @param interval
+     * @param badDayList
+     * @param badDayConvention
+     * @param calendar
+     * @return
+     */
+    private static LocalDate[] zcGetSwapCouponDateList(LocalDate valueDate,
+                                                       LocalDate matDate,
+                                                       boolean stubAtEnd,
+                                                       TDateInterval interval,
+                                                       TBadDayList badDayList,
                                                        TBadDayConvention badDayConvention,
                                                        HolidayCalendar calendar) throws CdsLibraryException {
+
+        /**
+         * If the maturity date is onCycle, then the stub is at end, because
+         * we are counting forward from the maturity date
+         */
+        LocalDate[] dl = cdsNewPayDates(valueDate, matDate, interval, stubAtEnd);
+
+        /**
+         * Now adjust for bad days
+         */
+        dl = calendar.adjustBusinessDays(dl, badDayConvention);
+        return dl;
+    }
+
+    /**
+     * Allocates a new DateList by calling cdsNewDateList and then removing the start date
+     * @param startDate
+     * @param matDate
+     * @param payInterval
+     * @param stubAtEnd
+     * @return
+     * @throws CdsLibraryException
+     */
+    private static LocalDate[] cdsNewPayDates(LocalDate startDate, LocalDate matDate, TDateInterval payInterval, boolean stubAtEnd)
+    throws CdsLibraryException{
+        LocalDate[] payDates = cdsNewDateList(startDate, matDate, payInterval, stubAtEnd);
+
+        /**
+         * Now remove startDate, and move all dates back by one
+         *
+         */
+        int size = payDates.length;
+        LocalDate[] newPayDates = new LocalDate[size - 1];
+        for (int idx = 0; idx < size - 1; idx++)
+            newPayDates[idx] = payDates[idx + 1];
+
+        return newPayDates;
+    }
+
+    /**
+     * Makes an array of dates from startDate, MaturityDate & interval
+     * if (maturityDate - startDate) / interval is not an integer there is a stub
+     * if stubAtEnd is set, the stub is placed at the end
+     * otherwise, it is placed at the beginning
+     *
+     * the startDate an maturityDate are always included
+     * and are the first and last dates respectively
+     *
+     * Assuming there is no stub, dates created are of the form
+     * baseDate + idx * interval
+     *
+     * where startIdx <= idx <= Time2Maturity / interval
+     * @param startDate
+     * @param maturityDate
+     * @param interval
+     * @param stubAtEnd
+     * @return
+     */
+    private static LocalDate[] cdsNewDateList(LocalDate startDate, LocalDate maturityDate, TDateInterval interval, boolean stubAtEnd)
+    throws CdsLibraryException {
+        IntHolder numIntervals = new IntHolder();
+        IntHolder extraDays = new IntHolder();
+        if (stubAtEnd) {
+            /** Count forward from the start date*/
+
+
+            if (CdsFunctions.cdsCountDates(startDate, maturityDate, interval, numIntervals, extraDays).equals(ReturnStatus.FAILURE)) {
+                throw new CdsLibraryException("Error in cdsCountDates");
+            }
+
+        } else {
+            /** Count backward from maturity date */
+            TDateInterval intVal = interval;
+            intVal.setPrd(-interval.prd);
+            if (CdsFunctions.cdsCountDates(startDate, maturityDate, intVal, numIntervals, extraDays).equals(ReturnStatus.FAILURE)) {
+                throw new CdsLibraryException("Error in cdsCountDates");
+            }
+        }
+
+        int numDates;
+
+        if (extraDays.get() > 0)
+            numDates = numIntervals.get() + 2;
+        else
+            numDates = numIntervals.get() + 1;
+
+        return new LocalDate[numDates];
+    }
+
+
+    private static TSwapDate[] swapDatesNewFromOriginal(LocalDate valueDate,
+                                                        long freq,
+                                                        LocalDate[] swapDates,
+                                                        int numDates,
+                                                        TBadDayList tBadDayList,
+                                                        TBadDayConvention badDayConvention,
+                                                        HolidayCalendar calendar) throws CdsLibraryException {
         TSwapDate[] tSwapDates = new TSwapDate[numDates];
         for (int idx = 0; idx < numDates; idx++) {
             TSwapDate tSwapDate = new TSwapDate();
@@ -249,9 +534,9 @@ public class IRCurveBuilder {
     }
 
     private static void setPreviousDateAndOnCycle(LocalDate valueDate, LocalDate origDate, long freq, TSwapDate tSwapDate)
-    throws CdsLibraryException {
+            throws CdsLibraryException {
         try {
-            TDateInterval interval = CdsFunctions.freq2TDateInterval(freq);
+            TDateInterval interval = CdsFunctions.cdsFreq2TDateInterval(freq);
             IntHolder numItervals = new IntHolder();
             if (valueDate.getDayOfMonth() <= 28 &&
                     origDate.getDayOfMonth() <= 28) {
@@ -263,8 +548,10 @@ public class IRCurveBuilder {
                  */
 
                 IntHolder extraDays = new IntHolder();
-                ReturnStatus status = countDates(valueDate,
+                ReturnStatus status = CdsFunctions.cdsCountDates(valueDate,
                         origDate, interval, numItervals, extraDays);
+                if (status.equals(ReturnStatus.FAILURE))
+                    throw new CdsLibraryException("Error in countDates function");
 
                 tSwapDate.setOnCycle((extraDays.get() == 0));
             } else {
@@ -282,61 +569,13 @@ public class IRCurveBuilder {
                 LocalDate prevDate = dateFromDateAndOffset(origDate, interval, -1);
                 tSwapDate.setPreviousDate(prevDate);
             }
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             logger.error(ex);
             throw new CdsLibraryException(ex.getMessage());
         }
     }
 
-    private static ReturnStatus countDates(LocalDate fromDate, LocalDate toDate, TDateInterval interval, IntHolder numItervals, IntHolder extraDays) {
-        try {
-            boolean isValid = checkDateInterval(interval, fromDate, toDate);
-            if (!isValid)
-                return ReturnStatus.FAILURE;
 
-            DoubleHolder intervalYears = new DoubleHolder();
-            if (interval.getIntervalInYears(intervalYears).equals(ReturnStatus.FAILURE)) {
-                logger.error("Error converting interval to years");
-                return ReturnStatus.FAILURE;
-            }
-
-            double fromToYears = (double) (fromDate.periodUntil(toDate, ChronoUnit.DAYS)) / CdsDateConstants.DAYS_PER_YEAR;
-            int lowNumIntervals = Math.max(0, (int) Math.floor(Math.abs(fromToYears / intervalYears.get())) - 2);
-            int index = lowNumIntervals;
-            LocalDate currDate = dateFromDateAndOffset(fromDate, interval, index);
-            LocalDate lastDate = currDate;
-
-            while (IS_BETWEEN(currDate, fromDate, toDate)) {
-                ++index;
-                lastDate = currDate;
-                currDate = dateFromDateAndOffset(fromDate, interval, index);
-            }
-
-            numItervals.set(index - 1);
-            if (numItervals.get() < lowNumIntervals) {
-                logger.error("Failed in countDates (" + fromDate + ")-( " + toDate + ")");
-                return ReturnStatus.FAILURE;
-            }
-
-            extraDays.set((int) Math.abs(lastDate.periodUntil(toDate, ChronoUnit.DAYS)));
-        } catch (Exception ex) {
-            logger.error(ex);
-            return ReturnStatus.FAILURE;
-        }
-
-        return ReturnStatus.SUCCESS;
-    }
-
-    private static boolean checkDateInterval(TDateInterval interval, LocalDate fromDate, LocalDate toDate) {
-        if (interval.prd == 0)
-            return false;
-        if (fromDate.periodUntil(toDate, ChronoUnit.DAYS) < 0) {
-            logger.error("Invalid to and from dates");
-            return false;
-        }
-
-        return true;
-    }
 
     private static void checkSwapInputs(TCurve zeroCurve,
                                         TCurve discountZC,

@@ -1007,12 +1007,12 @@ public class CdsFunctionLibrary {
 
             DoubleHolder result = new DoubleHolder();
 
-            if (ExcelFunctions.cdsDateIntervalToFreq(fixedIVL, result).equals(ReturnStatus.FAILURE)) {
+            if (CdsFunctions.cdsDateIntervalToFreq(fixedIVL, result).equals(ReturnStatus.FAILURE)) {
                 throw new CdsLibraryException("Unable to convert date interval to frequency");
             }
             final long fixedFreq = (long) result.get();
 
-            if(ExcelFunctions.cdsDateIntervalToFreq(floatIVL, result).equals(ReturnStatus.FAILURE)) {
+            if(CdsFunctions.cdsDateIntervalToFreq(floatIVL, result).equals(ReturnStatus.FAILURE)) {
                 throw new CdsLibraryException("Unable to convert date interval to frequency");
             }
             final long floatFreq = (long) result.get();
