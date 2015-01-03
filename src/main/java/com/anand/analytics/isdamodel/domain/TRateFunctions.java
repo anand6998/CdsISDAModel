@@ -1,12 +1,15 @@
 package com.anand.analytics.isdamodel.domain;
 
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
+import com.anand.analytics.isdamodel.ir.ZeroCurve;
 import com.anand.analytics.isdamodel.utils.*;
 import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
+import org.threeten.bp.chrono.ChronoLocalDate;
 import org.threeten.bp.temporal.ChronoUnit;
 
+import static com.anand.analytics.isdamodel.utils.CdsFunctions.ARE_ALMOST_EQUAL;
 import static com.anand.analytics.isdamodel.utils.CdsFunctions.IS_ALMOST_ZERO;
 
 
@@ -15,6 +18,7 @@ import static com.anand.analytics.isdamodel.utils.CdsFunctions.IS_ALMOST_ZERO;
  */
 public class TRateFunctions {
     private static Logger logger = Logger.getLogger(TRateFunctions.class);
+
     public static double cdsForwardZeroPrice(TCurve zeroCurve, LocalDate startDate, LocalDate maturityDate) throws CdsLibraryException {
         double startPrice = cdsZeroPrice(zeroCurve, startDate);
         double maturityPrice = cdsZeroPrice(zeroCurve, maturityDate);
@@ -22,9 +26,8 @@ public class TRateFunctions {
     }
 
     public static ReturnStatus cdsRateToDiscountYearFrac(double rate, double yf, DayCountBasis rateBasis, DoubleHolder result) {
-        switch(rateBasis) {
-            case SIMPLE_BASIS:
-            {
+        switch (rateBasis) {
+            case SIMPLE_BASIS: {
                 double denom = 1.0 + rate * yf;
                 if (denom <= 0.0 || IS_ALMOST_ZERO(denom)) {
                     logger.error("Invalid simple interest rate");
@@ -62,8 +65,7 @@ public class TRateFunctions {
                 if (tmp <= 0.0 || IS_ALMOST_ZERO(tmp)) {
                     logger.error("Bad rate");
                     return ReturnStatus.FAILURE;
-                }
-                else {
+                } else {
                     double discount = Math.pow(tmp, -rateBasis.getValue() * yf);
                     result.set(discount);
                 }
@@ -94,7 +96,7 @@ public class TRateFunctions {
 
             DoubleHolder rate = new DoubleHolder();
             Validate.notNull(zeroCurve, "zeroCurve is null");
-            Validate.isTrue (zeroCurve.getDates().length > 0, "zeroCurve.dates.length == 0");
+            Validate.isTrue(zeroCurve.getDates().length > 0, "zeroCurve.dates.length == 0");
 
             if (CdsUtils.binarySearchLong(date,
                     zeroCurve.getDates(),
@@ -267,5 +269,260 @@ public class TRateFunctions {
         return ReturnStatus.SUCCESS;
     }
 
+    public static ReturnStatus zcComputeDiscount(ZeroCurve zc,
+                                                 LocalDate date,
+                                                 double rate, DoubleHolder discountOut) {
+        if (zc.getDayCountBasis().equals(DayCountBasis.ANNUAL_BASIS) &&
+                rate >= -1.0 &&
+                (date.isEqual(zc.getValueDate()) || date.isAfter(zc.getValueDate())) &&
+                (zc.getDayCount().equals(DayCount.ACT_365F) || zc.getDayCount().equals(DayCount.ACT_360))) {
+            double discount = Math.pow(1 + rate, (date.periodUntil(zc.getValueDate(), ChronoUnit.DAYS) / (zc.getDayCount().equals(DayCount.ACT_360) ? 360. : 365.)));
+            discountOut.set(discount);
+            return ReturnStatus.SUCCESS;
+        }
+
+        DoubleHolder discOut = new DoubleHolder();
+        if (cdsRateToDiscount(
+                rate,
+                zc.getValueDate(),
+                date,
+                zc.getDayCount(),
+                zc.getDayCountBasis(), discOut).equals(ReturnStatus.FAILURE)
+                ) {
+            logger.error("Error calculating cdsRateToDiscount");
+            return ReturnStatus.FAILURE;
+
+        }
+
+        discountOut.set(discOut.get());
+        return ReturnStatus.SUCCESS;
+
+    }
+
+    private static ReturnStatus cdsRateToDiscount(double rate, LocalDate startDate, LocalDate endDate,
+                                                  DayCount rateDayCountConv, DayCountBasis rateBasis, DoubleHolder discOut) {
+
+
+        if (rateBasis.equals(DayCountBasis.DISCOUNT_FACTOR)) {
+            if (rate <= 0.0) {
+                logger.error("Bad rate");
+                return ReturnStatus.FAILURE;
+            }
+            discOut.set(rate);
+            return ReturnStatus.SUCCESS;
+        }
+
+        if (rateBasis.getValue() < DayCountBasis.SIMPLE_BASIS.getValue()) {
+            logger.error("Bad basis");
+            return ReturnStatus.FAILURE;
+        }
+
+        DoubleHolder rateYF = new DoubleHolder();
+
+        if (TDateFunctions.cdsDayCountFraction(startDate, endDate, rateDayCountConv, rateYF).equals(ReturnStatus.FAILURE)) {
+            logger.error("Error calculating cdsDayCountFraction");
+            return ReturnStatus.FAILURE;
+        }
+
+        DoubleHolder discount = new DoubleHolder();
+        if (cdsRateToDiscountYearFrac(rate, rateYF.get(), rateBasis, discount).equals(ReturnStatus.FAILURE)) {
+            logger.error("Error calculating discount year fraction");
+            return ReturnStatus.FAILURE;
+        }
+
+        discOut.set(discount.get());
+        return ReturnStatus.SUCCESS;
+    }
+
+    public static ReturnStatus cdsDiscountToRate(double discount, LocalDate startDate, LocalDate endDate,
+                                                 DayCount rateDayCountConv, DayCountBasis rateBasis, DoubleHolder rate)
+            {
+        if (discount <= 0.0) {
+            logger.error("Bad discount factor");
+            return ReturnStatus.FAILURE;
+        }
+
+        if (rateBasis.equals(DayCountBasis.DISCOUNT_FACTOR)) {
+            if (startDate.isEqual(endDate)) {
+                if (!ARE_ALMOST_EQUAL(discount, 1.0)) {
+                    logger.error("startDate == endDate; discountFactor != 1");
+                    return ReturnStatus.FAILURE;
+                }
+
+                rate.set(1.0);
+                return ReturnStatus.SUCCESS;
+            } else {
+                rate.set(discount);
+                return ReturnStatus.SUCCESS;
+            }
+        }
+
+        if (startDate.isEqual(endDate)) {
+            logger.error("startDate == endDate");
+            return ReturnStatus.FAILURE;
+        }
+
+        if (rateBasis.getValue() < DayCountBasis.SIMPLE_BASIS.getValue()) {
+            logger.error("Bad input basis");
+            return ReturnStatus.FAILURE;
+        }
+
+        DoubleHolder rateYf = new DoubleHolder();
+        if (TDateFunctions.cdsDayCountFraction(startDate, endDate, rateDayCountConv, rateYf).equals(ReturnStatus.FAILURE)) {
+            logger.error("Error in cdsDayCountFraction");
+            return ReturnStatus.FAILURE;
+        }
+
+        DoubleHolder rateOut = new DoubleHolder();
+        if (cdsRateToDiscountYearFrac(discount, rateYf.get(), rateBasis, rateOut).equals(ReturnStatus.FAILURE)) {
+            logger.error("Error in cdsRateToDiscountYearFraction");
+            return ReturnStatus.FAILURE;
+        }
+
+        rate.set(rateOut.get());
+        return ReturnStatus.SUCCESS;
+
+    }
+
+    /**
+     * Calculates an interpolated rate for a date
+     *
+     * Note: piece wise interpolation allows different areas of the zero curve
+     * to be interpolated using different methods
+     *
+     * Basically an array of <date, interpolationStuff> is used for any date before the given date
+     * The code allows the interpolation stuff to be another piecewise interpolation type although the utility
+     * of this is unknown
+     * @param zc
+     * @param date
+     * @param interpTypeIn
+     * @param interpDataIn
+     * @return
+     * @throws CdsLibraryException
+     */
+    public static ReturnStatus zcInterpolate (
+            ZeroCurve zc,
+            LocalDate date,
+            TInterpType interpTypeIn,
+            TInterpData interpDataIn,
+            DoubleHolder rateOut
+    ) {
+
+        if (zc.getfNumItems() < 1) {
+            logger.error("No points on the zero Curve");
+            return ReturnStatus.FAILURE;
+        }
+        /*
+        Do flat exptrapolation only when going backwards. This is done so that the swaps
+        which have payments before the beginning of the stub zero curve will still value
+        to par. This can happen very easily if there are swaps with front stubs.
+        We still permit forward non-flat extrapolation
+         */
+        if (date.isBefore(zc.getDates()[0]) || date.isEqual(zc.getDates()[0])) {
+            rateOut.set(zc.getRates()[0]);
+            return ReturnStatus.SUCCESS;
+        }
+
+        if (date.isEqual(zc.getValueDate())) {
+            /*
+            cannot calculate rate for value date, so get the value at the next date
+            which is the next date which is the next best thing
+             */
+            //TODO - check this
+            date = date.plusDays(1);
+        }
+
+        /*
+        Find indices in zero curve which bracket the date
+         */
+        IntHolder loIdx = new IntHolder();
+        IntHolder hiIdx = new IntHolder();
+        ChronoLocalDate xDesired = date;
+
+        if (CdsFunctions.cdsBinarySearchLongFast(xDesired,
+                zc.getDates(),
+                loIdx,
+                hiIdx).equals(ReturnStatus.FAILURE)) {
+            logger.error("Binary search failed");
+            return ReturnStatus.FAILURE;
+        }
+
+        int lo = loIdx.get();
+        int hi = hiIdx.get();
+
+        /* exact match */
+        if (zc.getDates()[lo].compareTo(date) == 0) {
+            rateOut.set(zc.getRates()[lo]);
+            return ReturnStatus.SUCCESS;
+        }
+        if (zc.getDates()[hi].compareTo(date) == 0) {
+            rateOut.set(zc.getRates()[hi]);
+            return ReturnStatus.SUCCESS;
+        }
+
+
+        TInterpType interpType = interpTypeIn;
+        TInterpData interpData = interpDataIn;
+
+        double rate;
+
+        //This should use the daycount convention to get days between
+        switch(interpType) {
+            case LINEAR_INTERP: {
+                long hi_lo = zc.getDates()[lo].periodUntil(zc.getDates()[hi], ChronoUnit.DAYS);
+                long dt_lo = zc.getDates()[lo].periodUntil(date, ChronoUnit.DAYS);
+
+                rate = zc.getRates()[lo];
+                if (hi_lo != 0) {
+                    rate += ((zc.getRates()[hi] - zc.getRates()[lo]) / hi_lo) * dt_lo;
+                }
+            }
+            break;
+
+            case FLAT_FORWARDS: {
+
+                long hi_lo = zc.getDates()[lo].periodUntil(zc.getDates()[hi], ChronoUnit.DAYS);
+                long dt_lo = zc.getDates()[lo].periodUntil(date, ChronoUnit.DAYS);
+
+                if (hi_lo == 0) {
+                    rate = zc.getRates()[lo];
+                } else {
+                    DoubleHolder discLo = new DoubleHolder();
+                    if(TRateFunctions.zcComputeDiscount(zc, zc.getDates()[lo], zc.getRates()[lo], discLo).equals(ReturnStatus.FAILURE)) {
+                        logger.error("Error computing discount");
+                        return ReturnStatus.FAILURE;
+                    }
+
+                    DoubleHolder discHi = new DoubleHolder();
+                    if(TRateFunctions.zcComputeDiscount(zc, zc.getDates()[hi], zc.getRates()[hi], discHi).equals(ReturnStatus.FAILURE)) {
+                        logger.error("Error computing discount");
+                        return ReturnStatus.FAILURE;
+                    }
+
+                    if (discLo.get() == 0.0) {
+                        logger.error("Zero discLo");
+                        return ReturnStatus.FAILURE;
+                    }
+
+                    double discDate = discLo.get() * Math.pow((discHi.get() / discLo.get()), (dt_lo / (double) hi_lo));
+
+                    DoubleHolder rateOut2 = new DoubleHolder();
+                    if (TRateFunctions.cdsDiscountToRate(discDate, zc.getValueDate(), date, zc.getDayCount(), zc.getDayCountBasis(), rateOut2).equals(ReturnStatus.FAILURE)) {
+                        logger.error("Error in cdsDiscountToRate");
+                    }
+
+                    rate = rateOut2.get();
+                }
+            }
+
+            break;
+            default:
+                logger.error("Bad interpolation type");
+                return ReturnStatus.FAILURE;
+        }
+
+        rateOut.set(rate);
+        return  ReturnStatus.SUCCESS;
+    }
 
 }

@@ -36,6 +36,10 @@ public class CdsFunctions {
         return false;
     }
 
+    public static boolean ARE_ALMOST_EQUAL(double x, double y) {
+        return IS_ALMOST_ZERO(x - y);
+    }
+
     public static TDateInterval cdsFreq2TDateInterval(long freq) throws CdsLibraryException {
         if (freq > 0 && freq <=12) {
             long prd = CdsDateConstants.MONTHS_PER_YEAR / (int) freq;
@@ -147,6 +151,89 @@ public class CdsFunctions {
         }
 
         return true;
+    }
+
+    public static <T extends Comparable<T>> ReturnStatus cdsBinarySearchLongFast(
+            T xDesired,
+            T[] xs,
+            IntHolder loIdx,
+            IntHolder hiIdx
+    ) {
+        int lo, hi, mid = 0;
+        int count;
+
+        int N = xs.length;
+        if (N < 2) {
+            if (N < 1) {
+                logger.error("# points must be >= 1");
+                return ReturnStatus.FAILURE;
+            }
+            else {
+                loIdx.set(0);
+                hiIdx.set(0);
+                return ReturnStatus.SUCCESS;
+            }
+        }
+
+        /*
+         * Extrapolate if desired X is less than the smallest in X array
+         */
+        if (xDesired.compareTo(xs[0]) <= 0) {
+            loIdx.set(0);
+            hiIdx.set(1);
+            return ReturnStatus.SUCCESS;
+        }
+
+        /*
+         * Extrapolate if desired X is greater than the biggest in X array
+         */
+        if (xDesired.compareTo(xs[N - 1]) > 0) {
+            loIdx.set(N - 2);
+            hiIdx.set(N - 1);
+            return ReturnStatus.SUCCESS;
+        }
+
+        lo = 0;
+        hi = N - 2;
+
+        /*
+         * Do binary search to find pair of x's which surround the desired X value
+         */
+        for (count = N + 1; count > 0; count--) {
+            mid = (hi + lo ) / 2;
+
+            if (xDesired.compareTo(xs[mid]) < 0)
+                hi = mid - 1;
+
+            else if (xDesired.compareTo(xs[mid + 1]) > 0 )
+                lo = mid + 1;
+
+            else
+                break;
+        }
+
+        if (count == 0) {
+            logger.error(" x array not in increasing order");
+            return ReturnStatus.FAILURE;
+        }
+
+        /*
+         * Protect against a run of x values which are the same
+         * set 2 surrounding indices to be lo and hi
+         * Note that there is no danger of running off the end
+         * since the only way for x[lo] = x[hi] is for both to be equal to xDesired.
+         * But from check at beginning we know x[N-1] <> xDesired
+         */
+
+        lo = mid;
+        hi = mid + 1;
+        while (xs[lo].compareTo(xs[hi]) == 0)
+            hi++;
+
+        loIdx.set(lo);
+        hiIdx.set(hi);
+
+        return ReturnStatus.SUCCESS;
     }
 
 
