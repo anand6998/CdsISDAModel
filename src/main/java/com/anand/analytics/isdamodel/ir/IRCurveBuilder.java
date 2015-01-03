@@ -4,17 +4,16 @@ import com.anand.analytics.isdamodel.date.HolidayCalendar;
 import com.anand.analytics.isdamodel.domain.*;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.utils.*;
-import com.sun.org.apache.bcel.internal.generic.RETURN;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
+import org.threeten.bp.chrono.ChronoLocalDate;
 import org.threeten.bp.temporal.ChronoUnit;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.anand.analytics.isdamodel.domain.TDateFunctions.IS_BETWEEN;
 import static com.anand.analytics.isdamodel.domain.TDateFunctions.cdsDayCountFraction;
 import static com.anand.analytics.isdamodel.domain.TDateFunctions.dateFromDateAndOffset;
 
@@ -207,7 +206,7 @@ public class IRCurveBuilder {
             if (tBadDayList != null) {
                 //this should never be true for us
                 //TODO - may code later
-                //use the holiday list to define the adjustments
+                //use the holiday calendar to define the adjustments
             } else {
                 swapDates = swapDatesNewFromOriginal(
                         zeroCurve.getValueDate(),
@@ -248,6 +247,8 @@ public class IRCurveBuilder {
                         /**
                          * Optimization - compute from last
                          */
+                    //TODO
+
                     } else {
                         ReturnStatus status = zcAddSwap(zeroCurve,
                                 discountZC,
@@ -414,14 +415,14 @@ public class IRCurveBuilder {
                                           TInterpData interpData)
         throws CdsLibraryException {
 
-        int firstUncoverd; /* index in cfl of 1st uncovered c.f */
+        int firstUncovered; /* index in cfl of 1st uncovered c.f */
 
         /* add at last c.f if not set up */
         if (date ==  null)
             date = cfl[cfl.length - 1].getfDate();
 
         if (zc.getfNumItems() <= 0) {
-            firstUncoverd = 0;
+            firstUncovered = 0;
             interpType = TInterpType.LINEAR_INTERP;
         } else {
             /* last date in zCurve */
@@ -430,23 +431,23 @@ public class IRCurveBuilder {
                 throw new CdsLibraryException("Date to add already covered");
             }
 
-            firstUncoverd = cfl.length - 1;
-            if (firstUncoverd < 0 ||
-                    cfl[firstUncoverd].getfDate().isBefore(lastZcDate)) {
+            firstUncovered = cfl.length - 1;
+            if (firstUncovered < 0 ||
+                    cfl[firstUncovered].getfDate().isBefore(lastZcDate)) {
                 throw new CdsLibraryException("No cash flows in list beyond zeroCurve - nothing to add");
 
             }
 
-            while (firstUncoverd >= 0 && cfl[firstUncoverd].getfDate().isAfter(lastZcDate))
-                firstUncoverd--;    // decrement until covered
+            while (firstUncovered >= 0 && cfl[firstUncovered].getfDate().isAfter(lastZcDate))
+                firstUncovered--;    // decrement until covered
 
             //move upto first not covered
-            firstUncoverd++;
+            firstUncovered++;
 
             //Calc npv of covered cash flows
-            if (firstUncoverd > 0) {
+            if (firstUncovered > 0) {
                 DoubleHolder sumNpv = new DoubleHolder();
-                zcPresentValueCFL(zc, cfl, 0, firstUncoverd - 1, interpType, interpData);
+                zcPresentValueCFL(zc, cfl, 0, firstUncovered - 1, interpType, interpData);
             }
 
 
@@ -524,8 +525,37 @@ public class IRCurveBuilder {
                                          TInterpType interpType,
                                          TInterpData interpData)
     throws CdsLibraryException {
-        return 0;
+
+        double discountFactor = zcDiscountFactor(zc, date, interpType, interpData);
+        double pv = price * discountFactor;
+
+        return pv;
     }
+
+    private static double zcDiscountFactor(
+            ZeroCurve zc,
+            LocalDate date,
+            TInterpType interpType,
+            TInterpData interpData
+    ) throws CdsLibraryException {
+        if (date.isEqual(zc.getValueDate()))
+            return 1.0;
+
+        DoubleHolder rateOut = new DoubleHolder();
+        TRateFunctions.zcInterpolate(zc, date, interpType, interpData, rateOut);
+        double rate = rateOut.get();
+
+        DoubleHolder discOut = new DoubleHolder();
+        if(TRateFunctions.zcComputeDiscount(zc, date, rate, discOut).equals(ReturnStatus.FAILURE)) {
+            logger.error("Error computing discount");
+            throw new CdsLibraryException("Error computing discount");
+
+        }
+
+        return discOut.get();
+
+    }
+
 
     private static TCashFlow[] zcGetSwapCashFlowList(LocalDate valueDate,
                                                      LocalDate matDate,
