@@ -55,6 +55,14 @@ public class DefaultHolidayCalendar implements HolidayCalendar {
     }
 
     @Override
+    public boolean isHoliday(LocalDate input) {
+        boolean isBusinessDay = holidayCalendarFunctions.isBusinessDay(input, weekendDays, holidays);
+        if (!isBusinessDay)
+            return true;
+        return false;
+    }
+
+    @Override
     public LocalDate[] adjustBusinessDays(LocalDate[] inputs, TBadDayConvention badDayConvention) throws CdsLibraryException {
         LocalDate[] retList = new LocalDate[inputs.length];
         for (int idx = 0; idx < inputs.length; idx++)

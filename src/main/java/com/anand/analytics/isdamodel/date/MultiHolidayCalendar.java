@@ -79,4 +79,12 @@ public class MultiHolidayCalendar implements HolidayCalendar {
 
         return retList;
     }
+
+    @Override
+    public boolean isHoliday(LocalDate input) {
+        boolean isBusinessDay = holidayCalendarFunctions.isBusinessDay(input, weekendDays, holidays);
+        if (!isBusinessDay)
+            return true;
+        return false;
+    }
 }

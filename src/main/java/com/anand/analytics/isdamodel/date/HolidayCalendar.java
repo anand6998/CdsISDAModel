@@ -17,4 +17,5 @@ public interface HolidayCalendar {
     public LocalDate addBusinessDays(LocalDate input, long numBusDays);
     public LocalDate getNextBusinessDay(LocalDate input, TBadDayConvention badDayConvention) throws CdsLibraryException;
     public LocalDate[] adjustBusinessDays(LocalDate[] inputs, TBadDayConvention badDayConvention) throws CdsLibraryException;
+    public boolean isHoliday(LocalDate input);
 }
