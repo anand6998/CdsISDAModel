@@ -12,4 +12,15 @@ public enum DayCount {
     private DayCount(int value) {
         this.value = value;
     }
+
+    public int getValue() {
+        return value;
+    }
+
+    public static DayCount get(int idx) {
+        for (int i = 0; i < values().length; i++)
+            if (values()[i].value == idx)
+                return values()[i];
+        return null;
+    }
 }

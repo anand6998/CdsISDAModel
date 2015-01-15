@@ -4,6 +4,7 @@ package com.anand.analytics.isdamodel.cds;
  * Created by Anand on 12/24/2014.
  */
 
+
 import com.anand.analytics.isdamodel.utils.CdsUtils;
 import com.anand.analytics.isdamodel.utils.DayCount;
 import com.anand.analytics.isdamodel.utils.DayCountBasis;
@@ -20,8 +21,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.threeten.bp.LocalDate;
 
-import static com.anand.analytics.isdamodel.cds.TDateFunctions.cdsDayCountFraction;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
+import java.io.StringWriter;
 
+import static com.anand.analytics.isdamodel.cds.TDateFunctions.cdsDayCountFraction;
 
 /**
  * Created by Anand on 10/28/2014.
@@ -344,6 +348,27 @@ public class TestCdsFunctions {
         double expectedValue = 0.011413613279366954;
         System.out.println("Upfront to spread : " + oneSpread.get());
         Assert.assertEquals(expectedValue, oneSpread.get(), DELTA);
+    }
+
+    @Test
+    public void testTCurveSerialization() throws Exception {
+        TCurve tCurve = setUpTCurve();
+
+        TCurveStorable storable = new TCurveStorable(tCurve.getBaseDate(),
+                tCurve.getDates(),
+                tCurve.getRates(),
+                tCurve.getBasis(),
+                tCurve.getDayCountConv());
+
+
+        StringWriter writer = new StringWriter();
+        JAXBContext context = JAXBContext.newInstance(TCurveStorable.class);
+        Marshaller m = context.createMarshaller();
+
+        m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+        m.marshal(storable, writer);
+
+        System.out.println(writer.toString());
     }
 
     @Test

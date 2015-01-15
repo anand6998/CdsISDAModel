@@ -15,12 +15,24 @@ import static com.anand.analytics.isdamodel.cds.TDateFunctions.cdsDayCountFracti
  * Created by Anand on 10/21/2014.
  */
 public class TCurve {
+    //@XmlTransient
     final static Logger logger = Logger.getLogger(TCurve.class);
+
+    //@XmlJavaTypeAdapter(type = LocalDate.class, value = LocalDateXmlAdapter.class)
     LocalDate baseDate;
+
+//    @XmlElementWrapper(name = "dates")
+//    @XmlElement(name = "date")
     LocalDate[] dates;
+
+//    @XmlElementWrapper(name = "rates")
+//    @XmlElement(name = "rate")
     double[] rates;
 
+    //@XmlJavaTypeAdapter(type = DayCountBasis.class, value = DayCountBasisXmlAdapter.class)
     DayCountBasis basis;
+
+    //@XmlJavaTypeAdapter(type = DayCount.class, value = DayCountXmlAdapter.class)
     DayCount dayCountConv;
 
     public LocalDate getBaseDate() {
