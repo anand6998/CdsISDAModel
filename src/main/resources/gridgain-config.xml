@@ -42,12 +42,13 @@
         a GGFS client node use 'config/hadoop/default-config-client.xml' file.
     -->
     <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
+        <property name="peerClassLoadingEnabled" value="true"/>
         <!-- Cache configurations. -->
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
                     <!-- Set a cache name: "myCache". -->
-                    <property name="name" value="CdsCache"/>
+                    <property name="name" value="Cds2Cache"/>
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="distributionMode" value="CLIENT_ONLY"/>
                 </bean>

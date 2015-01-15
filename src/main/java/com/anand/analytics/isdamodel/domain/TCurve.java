@@ -13,7 +13,10 @@ import java.io.Serializable;
  * Created by Anand on 10/21/2014.
  */
 public class TCurve implements Serializable, Cloneable {
+
+
     final static Logger logger = Logger.getLogger(TCurve.class);
+    private static final long serialVersionUID = 7528245660223429470L;
     LocalDate baseDate;
     LocalDate[] dates;
     double[] rates;
