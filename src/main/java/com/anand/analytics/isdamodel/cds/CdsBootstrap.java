@@ -1,22 +1,13 @@
 package com.anand.analytics.isdamodel.cds;
 
 
-import com.anand.analytics.isdamodel.utils.DayCount;
-import com.anand.analytics.isdamodel.utils.DayCountBasis;
-import com.anand.analytics.isdamodel.utils.DoubleHolder;
-import com.anand.analytics.isdamodel.utils.PeriodType;
-import com.anand.analytics.isdamodel.utils.ReturnStatus;
-import com.anand.analytics.isdamodel.utils.RootFindBrent;
-import com.anand.analytics.isdamodel.utils.SolvableFunction;
-import com.anand.analytics.isdamodel.utils.TBadDayConvention;
-import com.anand.analytics.isdamodel.utils.TDateInterval;
-import com.anand.analytics.isdamodel.utils.TProtPayConv;
-import com.anand.analytics.isdamodel.utils.TStubMethod;
+import com.anand.analytics.isdamodel.domain.*;
+import com.anand.analytics.isdamodel.utils.*;
 import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
 
-import static com.anand.analytics.isdamodel.cds.TRateFunctions.cdsConvertCompoundRate;
-import static com.anand.analytics.isdamodel.cds.TRateFunctions.cdsForwardZeroPrice;
+import static com.anand.analytics.isdamodel.domain.TRateFunctions.cdsConvertCompoundRate;
+import static com.anand.analytics.isdamodel.domain.TRateFunctions.cdsForwardZeroPrice;
 
 /**
  * Created by Anand on 10/21/2014.
@@ -46,13 +37,12 @@ public class CdsBootstrap {
      TBadDayConvention badDayConv,
      String calendar
     ) throws Exception {
-        String routine = "cdsCleanSpreadCurve";
-        TCurve out = null;
+
 
         LocalDate[] includeEndDates = null;
         double[] includeCouponRates = null;
 
-        TDateInterval ivl3M = new TDateInterval(3, PeriodType.M, 0);
+        final TDateInterval ivl3M = new TDateInterval(3, PeriodType.M, 0);
         if (couponInterval == null)
             couponInterval = ivl3M;
 
@@ -91,7 +81,7 @@ public class CdsBootstrap {
             couponRates = includeCouponRates;
         }
 
-        out = CdsBootstrap.bootstrap(today,
+        final TCurve out = CdsBootstrap.bootstrap(today,
                 discountCurve,
                 startDate,
                 stepinDate,
@@ -135,21 +125,13 @@ public class CdsBootstrap {
                                    TStubMethod stubType,           /* Stub type for fee leg                */
                                    TBadDayConvention badDayConv,
                                    String calendar) throws Exception {
-        String routine = "CdsBootstrap";
-        ReturnStatus status = ReturnStatus.FAILURE;
-
-        TCurve cdsCurve = null;
-
-        CdsBootstrapContext context = null;
-        TContingentLeg cl = null;
-        TFeeLeg fl = null;
-        double settleDiscount = 0.0;
-        boolean protectStart = true;
 
 
-        cdsCurve = new TCurve(today, endDates, couponRates, DayCountBasis.CONTINUOUS_BASIS, DayCount.ACT_365F);
+        final boolean protectStart = true;
 
-        context = new CdsBootstrapContext();
+
+        final TCurve cdsCurve = new TCurve(today, endDates, couponRates, DayCountBasis.CONTINUOUS_BASIS, DayCount.ACT_365F);
+        final CdsBootstrapContext context = new CdsBootstrapContext();
         context.discCurve = discountCurve;
         context.cdsCurve = cdsCurve;
         context.recoveryRate = recoveryRate;
@@ -157,14 +139,12 @@ public class CdsBootstrap {
         context.cashSettleDate = cashSettleDate;
 
         for (int i = 0; i < endDates.length; i++) {
-            double guess = 0;
-            DoubleHolder spread = new DoubleHolder();
 
-            guess = couponRates[i] / (1.0 - recoveryRate);
-
-            LocalDate maxDate = startDate.isAfter(today) ? startDate : today;
-            cl = new TContingentLeg(maxDate, endDates[i], 1.0, protectStart, TProtPayConv.PROT_PAY_DEF);
-            fl = new TFeeLeg(startDate,
+            final DoubleHolder spread = new DoubleHolder();
+            final double guess = couponRates[i] / (1.0 - recoveryRate);
+            final LocalDate maxDate = startDate.isAfter(today) ? startDate : today;
+            final TContingentLeg cl = new TContingentLeg(maxDate, endDates[i], 1.0, protectStart, TProtPayConv.PROT_PAY_DEF);
+            final TFeeLeg fl = new TFeeLeg(startDate,
                     endDates[i],
                     payAccOnDefault,
                     couponInterval,
@@ -180,7 +160,7 @@ public class CdsBootstrap {
             context.contigentLeg = cl;
             context.feeLeg = fl;
 
-            SolvableFunction function = new CdsBootStrapFunction();
+            final SolvableFunction function = new CdsBootStrapFunction();
             if (RootFindBrent.findRoot(function,
                     context, /* data */
                     0.0,    /* boundLo */
@@ -197,10 +177,7 @@ public class CdsBootstrap {
                 throw new Exception("CdsBootstrap.bootstrap()::Error finding root");
             }
 
-            cdsCurve.rates[i] = spread.get();
-
-            cl = null;
-            fl = null;
+            cdsCurve.getRates()[i] = spread.get();
 
             /** check if forward hazard rate is negative */
             if (i > 0) {
@@ -213,27 +190,26 @@ public class CdsBootstrap {
         }
 
         creditCurveConvertRateType(cdsCurve, DayCountBasis.ANNUAL_BASIS);
-
         return cdsCurve;
     }
 
     private static void creditCurveConvertRateType(TCurve curve, DayCountBasis dayCountBasis) {
-        if (dayCountBasis.equals(curve.basis)) {
+        if (dayCountBasis.equals(curve.getBasis())) {
             return;
         } else {
-            for (int i = 0; i < curve.dates.length; i++) {
+            for (int i = 0; i < curve.getDates().length; i++) {
                 DoubleHolder convertedRate = new DoubleHolder();
-                cdsConvertCompoundRate(curve.rates[i],
-                        curve.basis,
-                        curve.dayCountConv,
+                cdsConvertCompoundRate(curve.getRates()[i],
+                        curve.getBasis(),
+                        curve.getDayCountConv(),
                         dayCountBasis,
-                        curve.dayCountConv,
+                        curve.getDayCountConv(),
                         convertedRate);
-                curve.rates[i] = convertedRate.get();
+                curve.getRates()[i] = convertedRate.get();
 
             }
 
-            curve.basis = dayCountBasis;
+            curve.setBasis(dayCountBasis);
         }
     }
 }
@@ -242,23 +218,23 @@ class CdsBootStrapFunction implements SolvableFunction {
     final static Logger logger = Logger.getLogger(CdsBootStrapFunction.class);
 
     public ReturnStatus eval(double cleanSpread, Object data, DoubleHolder y) {
-        CdsBootstrapContext context = (CdsBootstrapContext) data;
+        final CdsBootstrapContext context = (CdsBootstrapContext) data;
 
-        int i = context.i;
-        TCurve discountCurve = context.discCurve;
-        TCurve cdsCurve = context.cdsCurve;
-        double recoveryRate = context.recoveryRate;
-        TContingentLeg cl = context.contigentLeg;
-        TFeeLeg fl = context.feeLeg;
-        LocalDate cdsBaseDate = cdsCurve.baseDate;
-        LocalDate stepInDate = context.stepinDate;
-        LocalDate cashSettleDate = context.cashSettleDate;
-        boolean isPriceClean = true;
+        final int i = context.i;
+        final TCurve discountCurve = context.discCurve;
+        final TCurve cdsCurve = context.cdsCurve;
+        final double recoveryRate = context.recoveryRate;
+        final TContingentLeg cl = context.contigentLeg;
+        final TFeeLeg fl = context.feeLeg;
+        final LocalDate cdsBaseDate = cdsCurve.getBaseDate();
+        final LocalDate stepInDate = context.stepinDate;
+        final LocalDate cashSettleDate = context.cashSettleDate;
+        final boolean isPriceClean = true;
 
-        double pvC; /* PV of contingent leg */
-        double pvF; /* PV of fee leg */
+        final double pvC; /* PV of contingent leg */
+        final double pvF; /* PV of fee leg */
 
-        cdsCurve.rates[i] = cleanSpread;
+        cdsCurve.getRates()[i] = cleanSpread;
 
         DoubleHolder result = new DoubleHolder();
 

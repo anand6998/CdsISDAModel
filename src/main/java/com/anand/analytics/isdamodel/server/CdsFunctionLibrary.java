@@ -1,23 +1,15 @@
 package com.anand.analytics.isdamodel.server;
 
 
-import com.anand.analytics.isdamodel.cds.CdsBootstrap;
-import com.anand.analytics.isdamodel.cds.CdsOne;
-import com.anand.analytics.isdamodel.cds.ExcelFunctions;
-import com.anand.analytics.isdamodel.cds.TCurve;
-import com.anand.analytics.isdamodel.cds.TFeeLeg;
-import com.anand.analytics.isdamodel.cds.TFeeLegCashFlow;
-import com.anand.analytics.isdamodel.cds.TRateFunctions;
+import com.anand.analytics.isdamodel.cds.*;
 import com.anand.analytics.isdamodel.context.CdsCacheManager;
 import com.anand.analytics.isdamodel.context.XlServerSpringUtils;
+import com.anand.analytics.isdamodel.date.HolidayCalendar;
+import com.anand.analytics.isdamodel.date.HolidayCalendarFactory;
+import com.anand.analytics.isdamodel.domain.*;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
-import com.anand.analytics.isdamodel.utils.DayCount;
-import com.anand.analytics.isdamodel.utils.DayCountBasis;
-import com.anand.analytics.isdamodel.utils.DoubleHolder;
-import com.anand.analytics.isdamodel.utils.ReturnStatus;
-import com.anand.analytics.isdamodel.utils.TBadDayConvention;
-import com.anand.analytics.isdamodel.utils.TDateInterval;
-import com.anand.analytics.isdamodel.utils.TStubMethod;
+import com.anand.analytics.isdamodel.ir.IRCurveBuilder;
+import com.anand.analytics.isdamodel.utils.*;
 import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 import org.boris.xlloop.reflect.XLFunction;
@@ -26,10 +18,11 @@ import org.boris.xlloop.xloper.XLNum;
 import org.boris.xlloop.xloper.XLString;
 import org.boris.xlloop.xloper.XLoper;
 import org.threeten.bp.LocalDate;
+import org.threeten.bp.temporal.ChronoUnit;
 
 import java.util.UUID;
 
-import static com.anand.analytics.isdamodel.cds.TDateFunctions.cdsDayCountFraction;
+import static com.anand.analytics.isdamodel.domain.TDateFunctions.cdsDayCountFraction;
 
 /**
  * Created by Anand on 12/3/2014.
@@ -951,7 +944,7 @@ public class CdsFunctionLibrary {
     public static XLoper cdsIrZeroCurveBuild(
             Double xldValueDate,
             String[] xlstraTypes,
-            double[] xldaEndDates,
+            String[] xlsaEndDates,
             double[] xldaRates,
             String xlsmmDc,
             String xlsFixedIvl,
@@ -961,21 +954,120 @@ public class CdsFunctionLibrary {
             String xlsSwapBdc,
             String xlsHolidays
     ) {
-        Validate.notNull(xldValueDate, "Invalid value date");
-        Validate.notNull(xlstraTypes, "Invalid types array");
-        Validate.notEmpty(xlstraTypes, "Invalid types array");
-        Validate.notNull(xldaEndDates, "Invalid end dates");
-        Validate.notNull(xldaRates, "Invalid rates");
-        Validate.notNull(xlsmmDc, "Invalid money market daycount");
-        Validate.notNull(xlsFixedIvl, "Invalid interval for fixed leg");
-        Validate.notNull(xlsFloatIvl, "Invalid interval for float leg");
-        Validate.notNull(xlsFixedDcc, "Invalid daycount for fixed leg");
-        Validate.notNull(xlsFloatDcc, "Invalid daycount for float leg");
-        Validate.notNull(xlsSwapBdc, "Invalid swap bdc");
-        Validate.notEmpty(xlsHolidays, "Invalid holiday calendar");
+        try {
+            Validate.notNull(xldValueDate, "Invalid value date");
+            Validate.notNull(xlstraTypes, "Invalid types array");
+            Validate.notEmpty(xlstraTypes, "Invalid types array");
+            Validate.notNull(xlsaEndDates, "Invalid end dates");
+            Validate.notNull(xldaRates, "Invalid rates");
+            Validate.notNull(xlsmmDc, "Invalid money market daycount");
+            Validate.notNull(xlsFixedIvl, "Invalid interval for fixed leg");
+            Validate.notNull(xlsFloatIvl, "Invalid interval for float leg");
+            Validate.notNull(xlsFixedDcc, "Invalid daycount for fixed leg");
+            Validate.notNull(xlsFloatDcc, "Invalid daycount for float leg");
+            Validate.notNull(xlsSwapBdc, "Invalid swap bdc");
+            Validate.notEmpty(xlsHolidays, "Invalid holiday calendar");
+
+            Validate.isTrue(xlsaEndDates.length == xldaRates.length, "Rates and Dates arrays must be of equal length");
+            Validate.isTrue(xlstraTypes.length == xldaRates.length, "Types and rates arrays must be of equal length");
+
+            final LocalDate valueDate = ExcelFunctions.xlDateToLocalDateTime(xldValueDate);
+            final char[] types = new char[xlstraTypes.length];
+            for (int i = 0; i < xlstraTypes.length; i++)
+                types[i] = xlstraTypes[i].charAt(0);
 
 
+            final LocalDate[] endDates = new LocalDate[xlsaEndDates.length];
+            HolidayCalendarFactory holidayCalendarFactory = (HolidayCalendarFactory ) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
+            HolidayCalendar noneHolidayCalendar = holidayCalendarFactory.getCalendar("None");
 
-        return new XLNum(0);
+            for (int i = 0; i < xlsaEndDates.length; i++) {
+                TDateInterval dateInterval = ExcelFunctions.cdsStringToDateInterval(xlsaEndDates[i]);
+                /**
+                 * Advance the date
+                 */
+                LocalDate adjDate = TDateFunctions.dtFwdAny(valueDate, dateInterval);
+                LocalDate busnDate = noneHolidayCalendar.getNextBusinessDay(adjDate, TBadDayConvention.NONE);
+                endDates[i] = busnDate;
+            }
+
+            final double[] rates = new double[xldaRates.length];
+            for (int i = 0; i < rates.length; i++) {
+                rates[i] = xldaRates[i];
+            }
+
+            final DayCount mmDCC = ExcelFunctions.cdsStringToDayCountConv(xlsmmDc);
+            final TDateInterval fixedIVL = ExcelFunctions.cdsStringToDateInterval(xlsFixedIvl);
+            final TDateInterval floatIVL = ExcelFunctions.cdsStringToDateInterval(xlsFloatIvl);
+            final DayCount fixedDCC = ExcelFunctions.cdsStringToDayCountConv(xlsFixedDcc);
+            final DayCount floadDCC = ExcelFunctions.cdsStringToDayCountConv(xlsFloatDcc);
+
+            final TBadDayConvention badDayConv = ExcelFunctions.cdsStringToBadDayConv(xlsSwapBdc);
+            final String calendar = new String(xlsHolidays);
+
+            DoubleHolder result = new DoubleHolder();
+
+            if (CdsFunctions.cdsDateIntervalToFreq(fixedIVL, result).equals(ReturnStatus.FAILURE)) {
+                throw new CdsLibraryException("Unable to convert date interval to frequency");
+            }
+            final long fixedFreq = (long) result.get();
+
+            if(CdsFunctions.cdsDateIntervalToFreq(floatIVL, result).equals(ReturnStatus.FAILURE)) {
+                throw new CdsLibraryException("Unable to convert date interval to frequency");
+            }
+            final long floatFreq = (long) result.get();
+
+            //HolidayCalendarFactory holidayCalendarFactory = (HolidayCalendarFactory) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
+            HolidayCalendar holidayCalendar = holidayCalendarFactory.getCalendar(calendar);
+
+            final LocalDate baseDate = valueDate;
+            for (int i = 0; i < types.length; i++) {
+                if(types[i] == 'M') {
+
+                    if (baseDate.periodUntil(endDates[i], ChronoUnit.DAYS) <=3 ) {
+                        /**
+                         * Untested logic - the example code never goes into this if condition
+                         */
+                        final TDateInterval tDateInterval = new TDateInterval(
+                                baseDate.periodUntil(endDates[i], ChronoUnit.DAYS),
+                                PeriodType.D,
+                                0
+                        );
+
+                        final TDateAdjIntvl tDateAdjIntvl = new TDateAdjIntvl(
+                                tDateInterval, CdsDateAdjType.BUSINESS,
+                                calendar,
+                                badDayConv
+                        );
+
+                        /**
+                         * This code just tries to move each date by the no. of adjusted business days
+                         *
+                         */
+                        //TODO - to be implemented
+                    }
+
+                    if (baseDate.periodUntil(endDates[i], ChronoUnit.DAYS) <= 21) {
+                        /**
+                         * for less than or equal to 3 weeks
+                         * adjust to business day
+                         */
+                        endDates[i] = holidayCalendar.getNextBusinessDay(endDates[i], TBadDayConvention.FOLLOW);
+                    } else {
+                        /**
+                         * adjust to business day
+                         */
+                        endDates[i] = holidayCalendar.getNextBusinessDay(endDates[i], TBadDayConvention.MODIFIED);
+                    }
+                }
+            }
+
+            IRCurveBuilder.buildIRZeroCurve(valueDate, types, endDates, rates, mmDCC, fixedFreq, floatFreq, fixedDCC, floadDCC, badDayConv, holidayCalendar);
+
+            return new XLNum(0);
+        } catch (Exception ex) {
+            logger.error(ex);
+            return new XLString(ex.getMessage());
+        }
     }
 }

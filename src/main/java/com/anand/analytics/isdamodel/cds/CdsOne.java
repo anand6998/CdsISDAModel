@@ -1,15 +1,9 @@
 package com.anand.analytics.isdamodel.cds;
 
 
-import com.anand.analytics.isdamodel.utils.DayCount;
-import com.anand.analytics.isdamodel.utils.DoubleHolder;
-import com.anand.analytics.isdamodel.utils.ReturnStatus;
-import com.anand.analytics.isdamodel.utils.RootFindBrent;
-import com.anand.analytics.isdamodel.utils.SolvableFunction;
-import com.anand.analytics.isdamodel.utils.TBadDayConvention;
-import com.anand.analytics.isdamodel.utils.TDateInterval;
-import com.anand.analytics.isdamodel.utils.TProtPayConv;
-import com.anand.analytics.isdamodel.utils.TStubMethod;
+import com.anand.analytics.isdamodel.domain.*;
+import com.anand.analytics.isdamodel.utils.*;
+import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 import org.threeten.bp.LocalDate;
 
@@ -129,59 +123,63 @@ public class CdsOne {
         double recoveryRate,
         DoubleHolder[] parSpread
     ) {
-        ReturnStatus status = ReturnStatus.FAILURE;
+        try {
+            ReturnStatus status = ReturnStatus.FAILURE;
 
+            boolean isPriceClean = true;
+            boolean protectStart = true;
 
-        boolean isPriceClean = true;
-        boolean protectStart = true;
+            Validate.notNull(parSpread, "parSpread is null");
+            Validate.isTrue(endDates.length >= 1, "endDates.length < 1");
+            Validate.isTrue(stepinDate.isAfter(today) || stepinDate.isEqual(today), "stepinDate < today");
 
-        assert(parSpread != null);
-        assert(endDates.length >= 1);
-        assert(stepinDate.isAfter(today) || stepinDate.isEqual(today));
+            for (int i = 0; i < endDates.length; i++) {
+                DoubleHolder feeLegPV = new DoubleHolder();
+                DoubleHolder contingentLegPV = new DoubleHolder();
+                if (cdsCdsFeeLegPV(today,
+                        stepinDate,
+                        stepinDate,
+                        startDate,
+                        endDates[i],
+                        payAccOnDefault,
+                        couponInterval,
+                        stubType,
+                        1.0, /*Notional*/
+                        1.0, /*Coupon Rate */
+                        paymentDcc,
+                        badDayConvention,
+                        calendar,
+                        discountCurve,
+                        spreadCurve,
+                        protectStart,
+                        isPriceClean,
+                        feeLegPV).equals(ReturnStatus.FAILURE)) {
+                    logger.error("CdsOne.cdsCdsParSpreads::Error in cdsCdsFeeLegPV");
+                    return ReturnStatus.FAILURE;
+                }
 
-        for (int i = 0; i < endDates.length; i++) {
-            DoubleHolder feeLegPV = new DoubleHolder();
-            DoubleHolder contingentLegPV = new DoubleHolder();
-            if (cdsCdsFeeLegPV(today,
-                    stepinDate,
-                    stepinDate,
-                    startDate,
-                    endDates[i],
-                    payAccOnDefault,
-                    couponInterval,
-                    stubType,
-                    1.0, /*Notional*/
-                    1.0, /*Coupon Rate */
-                    paymentDcc,
-                    badDayConvention,
-                    calendar,
-                    discountCurve,
-                    spreadCurve,
-                    protectStart,
-                    isPriceClean,
-                    feeLegPV).equals(ReturnStatus.FAILURE)) {
-                logger.error("CdsOne.cdsCdsParSpreads::Error in cdsCdsFeeLegPV");
-                return ReturnStatus.FAILURE;
+                if (cdsCdsContingentLegPV(today,
+                        stepinDate,
+                        ExcelFunctions.MAX_DATE(stepinDate, startDate),
+                        endDates[i],
+                        1.0, /*Notional*/
+                        discountCurve,
+                        spreadCurve,
+                        recoveryRate,
+                        protectStart,
+                        contingentLegPV).equals(ReturnStatus.FAILURE)) {
+                    logger.error("CdsOne.cdsCdsParSpreads::Error in cdsCdsContingentLegPV");
+                    return ReturnStatus.FAILURE;
+                }
+
+                parSpread[i].set(contingentLegPV.get() / feeLegPV.get());
             }
 
-            if (cdsCdsContingentLegPV(today,
-                    stepinDate,
-                    ExcelFunctions.MAX_DATE(stepinDate, startDate),
-                    endDates[i],
-                    1.0, /*Notional*/
-                    discountCurve,
-                    spreadCurve,
-                    recoveryRate,
-                    protectStart,
-                    contingentLegPV).equals(ReturnStatus.FAILURE)) {
-                logger.error("CdsOne.cdsCdsParSpreads::Error in cdsCdsContingentLegPV");
-                return ReturnStatus.FAILURE;
-            }
-
-            parSpread[i].set(contingentLegPV.get() / feeLegPV.get());
+            return ReturnStatus.SUCCESS;
+        } catch (Exception ex) {
+            logger.error(ex);
+            return ReturnStatus.FAILURE;
         }
-
-        return ReturnStatus.SUCCESS;
     }
 
     public static ReturnStatus cdsCdsoneUpfrontCharge(
@@ -283,8 +281,8 @@ public class CdsOne {
 
         boolean protectStart = true;
 
-        assert (price != null);
-        assert (stepinDate.isAfter(today) || stepinDate.isEqual(today));
+        Validate.notNull (price, "price is null");
+        Validate.isTrue (stepinDate.isAfter(today) || stepinDate.isEqual(today), "stepinDate < today");
 
         final LocalDate valueDate = settleDate;
         if (cdsCdsFeeLegPV(today,
@@ -340,14 +338,18 @@ public class CdsOne {
                                                       double recoveryRate,
                                                       boolean protectStart,
                                                       DoubleHolder pv) {
+        try {
+            TContingentLeg cl = new TContingentLeg(startDate, endDate, notional, protectStart, TProtPayConv.PROT_PAY_DEF);
+            if (cl.getPV(today, valueDate, startDate, discCurve, spreadCurve, recoveryRate, pv).equals(ReturnStatus.FAILURE)) {
+                logger.error("CdsOne.cdsCdsContingentLegPV()::Error calculating ContingentLeg PV");
+                return ReturnStatus.FAILURE;
+            }
 
-        TContingentLeg cl = new TContingentLeg(startDate, endDate, notional, protectStart, TProtPayConv.PROT_PAY_DEF);
-        if (cl.getPV(today, valueDate, startDate, discCurve, spreadCurve, recoveryRate, pv).equals(ReturnStatus.FAILURE)) {
-            logger.error("CdsOne.cdsCdsContingentLegPV()::Error calculating ContingentLeg PV");
+            return ReturnStatus.SUCCESS;
+        } catch (Exception ex) {
+            logger.error(ex);
             return ReturnStatus.FAILURE;
         }
-
-        return ReturnStatus.SUCCESS;
     }
 
     private static ReturnStatus cdsCdsFeeLegPV(LocalDate today,
@@ -368,16 +370,19 @@ public class CdsOne {
                                                boolean protectStart,
                                                boolean cleanPrice,
                                                DoubleHolder pv) {
+        try {
+            final TFeeLeg fl = new TFeeLeg(startDate, endDate, payAccruedOnDefault, dateInterval,
+                    stubType, notional, couponRate, paymentDcc, badDayConvention,
+                    calendar, protectStart);
 
-        final TFeeLeg fl = new TFeeLeg(startDate, endDate, payAccruedOnDefault, dateInterval,
-                stubType, notional, couponRate, paymentDcc, badDayConvention,
-                calendar, protectStart);
-
-        if (fl.getPV(today, valueDate, stepinDate, discCurve, spreadCurve, cleanPrice, pv).equals(ReturnStatus.FAILURE)) {
-            logger.error("CdsOne.cdsCdsFeeLegPV()::Error calculating fee leg PV");
+            if (fl.getPV(today, valueDate, stepinDate, discCurve, spreadCurve, cleanPrice, pv).equals(ReturnStatus.FAILURE)) {
+                logger.error("CdsOne.cdsCdsFeeLegPV()::Error calculating fee leg PV");
+                return ReturnStatus.FAILURE;
+            }
+            return ReturnStatus.SUCCESS;
+        } catch(Exception ex) {
+            logger.error(ex);
             return ReturnStatus.FAILURE;
         }
-        return ReturnStatus.SUCCESS;
-
     }
 }

@@ -1,4 +1,4 @@
-package com.anand.analytics.isdamodel.cds;
+package com.anand.analytics.isdamodel.domain;
 
 /**
  * Created by Anand on 10/21/2014.

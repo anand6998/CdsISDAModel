@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
-http://www.springframework.org/schema/beans/spring-beans-2.5.xsd"
+http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd"
         >
 
     <bean id="ehcache" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
@@ -22,6 +22,29 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd"
     <bean id="cdsCacheManager"
           class="com.anand.analytics.isdamodel.context.LocalCacheManager">
         <constructor-arg index="0" ref="serviceContext"/>
+    </bean>
+
+    <import resource="calendars/common-imports.xml"/>
+
+    <bean id="uaeUsdMultiHolidayCalendar" class="com.anand.analytics.isdamodel.date.MultiHolidayCalendar">
+        <constructor-arg index="0">
+            <list>
+                <ref bean="usHolidaysCalendar"/>
+                <ref bean="uaeHolidaysCalendar"/>
+            </list>
+        </constructor-arg>
+        <constructor-arg index="1" ref="holidayListReader"/>
+        <constructor-arg index="2" ref="holidayCalendarFunctions"/>
+
+    </bean>
+    <bean id="holidayCalendarFactory" class="com.anand.analytics.isdamodel.date.HolidayCalendarFactory">
+        <constructor-arg>
+            <map key-type="java.lang.String" value-type="com.anand.analytics.isdamodel.date.HolidayCalendar">
+                <entry key="None" value-ref="noHolidaysCalendar"/>
+                <entry key="USD" value-ref="usHolidaysCalendar"/>
+                <entry key="USD,UAE" value-ref="uaeUsdMultiHolidayCalendar"/>
+            </map>
+        </constructor-arg>
     </bean>
 
 </beans>

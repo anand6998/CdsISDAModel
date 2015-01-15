@@ -1,10 +1,17 @@
-package com.anand.analytics.isdamodel.utils;
+package com.anand.analytics.isdamodel.domain;
+
+import com.anand.analytics.isdamodel.utils.DoubleHolder;
+import com.anand.analytics.isdamodel.utils.PeriodType;
+import com.anand.analytics.isdamodel.utils.ReturnStatus;
+import org.apache.log4j.Logger;
+import static com.anand.analytics.isdamodel.utils.CdsDateConstants.*;
 
 /**
  * Created by Anand on 10/21/2014.
  */
 public class TDateInterval {
-    public int prd;
+    private final static Logger logger = Logger.getLogger(TDateInterval.class);
+    public long prd;
     public PeriodType periodType;
     public int flag;
 
@@ -16,7 +23,15 @@ public class TDateInterval {
                 '}';
     }
 
-    public TDateInterval(int prd, PeriodType periodType, int flag) {
+    public void setPrd(long prd) {
+        this.prd = prd;
+    }
+
+    public void setPeriodType(PeriodType periodType) {
+        this.periodType = periodType;
+    }
+
+    public TDateInterval(long prd, PeriodType periodType, int flag) {
         this.prd = prd;
         this.periodType = periodType;
         this.flag = flag;
@@ -24,12 +39,6 @@ public class TDateInterval {
 
     public TDateInterval() {
     }
-
-    private final static int MONTHS_PER_YEAR = 12;
-    private final static int MONTHS_PER_SEMI = 6;
-    private final static int MONTHS_PER_QUARTER = 3;
-    private final static int DAYS_PER_WEEK = 7;
-    private final static int DAYS_PER_LUNAR_MONTH = 28;
 
     public static TDateInterval get(int numPeriods, char periodType) {
         TDateInterval dateInterval = new TDateInterval();
@@ -81,5 +90,49 @@ public class TDateInterval {
         }
 
         return dateInterval;
+    }
+
+    public ReturnStatus getIntervalInYears(DoubleHolder retValue) {
+        double years;
+        switch (this.periodType) {
+            case A:
+            case Y:
+                years = prd;
+                break;
+            case S:
+                years = prd / 2.;
+                break;
+            case Q:
+            case I:
+            case K:
+            case L:
+                years = (double) prd / 4.;
+                break;
+            case M:
+            case E:
+            case F:
+            case G:
+            case H:
+            case J:
+            case T:
+                years = (double) prd / MONTHS_PER_YEAR;
+                break;
+            case W:
+                years = (double) prd * DAYS_PER_WEEK / DAYS_PER_YEAR;
+                break;
+            case D:
+                years = (double) prd / DAYS_PER_YEAR;
+                break;
+            case U:
+                years = (double) prd * DAYS_PER_LUNAR_MONTH / DAYS_PER_YEAR;
+                break;
+            default:
+                logger.error("Unknown interval type");
+                return ReturnStatus.FAILURE;
+
+        }
+
+        retValue.set(years);
+        return ReturnStatus.SUCCESS;
     }
 }

@@ -1,22 +1,15 @@
-package com.anand.analytics.isdamodel.cds;
+package com.anand.analytics.isdamodel.domain;
 
 
-import com.anand.analytics.isdamodel.utils.BooleanHolder;
-import com.anand.analytics.isdamodel.utils.DateHolder;
-import com.anand.analytics.isdamodel.utils.DayCount;
-import com.anand.analytics.isdamodel.utils.DoubleHolder;
-import com.anand.analytics.isdamodel.utils.LongHolder;
-import com.anand.analytics.isdamodel.utils.PeriodType;
-import com.anand.analytics.isdamodel.utils.ReturnStatus;
-import com.anand.analytics.isdamodel.utils.TBadDayConvention;
-import com.anand.analytics.isdamodel.utils.TDateInterval;
+import com.anand.analytics.isdamodel.context.XlServerSpringUtils;
+import com.anand.analytics.isdamodel.date.HolidayCalendar;
+import com.anand.analytics.isdamodel.date.HolidayCalendarFactory;
+import com.anand.analytics.isdamodel.utils.*;
 import org.apache.log4j.Logger;
-import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.temporal.ChronoUnit;
 
-import java.util.ArrayList;
-import java.util.List;
+import static com.anand.analytics.isdamodel.utils.CdsFunctions.MIN;
 
 /**
  * Created by Anand on 12/4/2014.
@@ -112,9 +105,9 @@ public class TDateFunctions {
                 }
 
                 if (isLeap.get())
-                    leapDays += min(actDays.get(), daysLeft.get());
+                    leapDays += MIN(actDays.get(), daysLeft.get());
                 else
-                    nonLeapDays += min(actDays.get(), daysLeft.get());
+                    nonLeapDays += MIN(actDays.get(), daysLeft.get());
 
                 /**
                  * loop through the years
@@ -290,12 +283,21 @@ public class TDateFunctions {
 
         }
 
+        if (negative == 1) {
+            long value = result.get() * -1;
+            result.set(value);
+        }
+
         return ReturnStatus.SUCCESS;
     }
 
+    public static LocalDate dateFromDateAndOffset(LocalDate oldDate,
+                                                  TDateInterval tDateInterval,
+                                                  int index) {
+        TDateInterval compoundInterval = tDateInterval;
+        compoundInterval.prd *= index;
 
-    public static double min (double a, double b) {
-        return a < b ? a : b;
+        return dtFwdAny(oldDate, compoundInterval);
     }
 
     public static LocalDate dtFwdAny
@@ -399,51 +401,62 @@ public class TDateFunctions {
         mdy.isLeap = startDate.isLeapYear();
     }
 
-    public static LocalDate adjustedBusinessDay(LocalDate date, TBadDayConvention method, String holidayFile) {
-        if (method.equals(TBadDayConvention.NONE))
-            return date;
+    public static ReturnStatus adjustedBusinessDay(LocalDate date, TBadDayConvention method, String calendar, DateHolder returnDate) {
+        if (method.equals(TBadDayConvention.NONE)) {
+            returnDate.set(date);
+            return ReturnStatus.SUCCESS;
+        }
 
-        List<LocalDate> holidayList = new ArrayList<LocalDate>();
-        holidayList = loadHolidaysFromFile(holidayFile);
+        HolidayCalendarFactory holidayCalendarFactory = (HolidayCalendarFactory) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
+        try {
+            HolidayCalendar holidayCalendar = holidayCalendarFactory.getCalendar(calendar);
 
-        LocalDate retDate = date;
-        int intervalSign = 1;
+            LocalDate retDate = date;
+            int intervalSign = 1;
 
 
-        switch (method) {
-            case NONE:
-                break;
-            case FOLLOW:
-                //intervalSign += 1;
-                retDate = nextBusinessDay(date, intervalSign, holidayList);
-                break;
-            case PREVIOUS:
-                intervalSign -= 1;
-                retDate = nextBusinessDay(date, intervalSign, holidayList);
-                break;
-            case MODIFIED:
+            switch (method) {
+                case NONE:
+                    break;
+                case FOLLOW:
+                    //intervalSign += 1;
+                    //retDate = nextBusinessDay(date, intervalSign, holidayList);
+                    retDate = holidayCalendar.getNextBusinessDay(date, intervalSign);
+                    break;
+                case PREVIOUS:
+                    intervalSign -= 1;
+                    //retDate = nextBusinessDay(date, intervalSign, holidayList);
+                    retDate = holidayCalendar.getNextBusinessDay(date, intervalSign);
+                    break;
+                case MODIFIED:
                 /*
                 ** Go forwards first. If you wind up in a different
                 ** month, then go backwards.
                 */
-                intervalSign = 1;
-                LocalDate nextDate = nextBusinessDay(date, intervalSign, holidayList);
+                    intervalSign = 1;
+                    LocalDate nextDate = holidayCalendar.getNextBusinessDay(date, intervalSign);
 
-                if (date.getMonth().getValue() != nextDate.getMonth().getValue()) {
-                    //Go back
-                    nextDate = nextBusinessDay(nextDate, -intervalSign, holidayList);
-                }
+                    if (date.getMonth().getValue() != nextDate.getMonth().getValue()) {
+                        //Go back
+                        nextDate = holidayCalendar.getNextBusinessDay(nextDate, -intervalSign);
+                    }
 
-                retDate = nextDate;
-                break;
-            default:
-                retDate = date;
+                    retDate = nextDate;
+                    break;
+                default:
+                    retDate = date;
+            }
+
+            returnDate.set(retDate);
+            return ReturnStatus.SUCCESS;
+        } catch (Exception ex) {
+            logger.error(ex);
+            return ReturnStatus.FAILURE;
         }
-
-        return retDate;
 
     }
 
+    /*
     public static LocalDate nextBusinessDay(LocalDate date, int intervalSign, List<LocalDate> holidayList) {
         LocalDate adjustedDate = date;
         DayOfWeek dayOfWeek = adjustedDate.getDayOfWeek();
@@ -455,10 +468,97 @@ public class TDateFunctions {
 
         return adjustedDate;
     }
+    */
 
-    public static List<LocalDate> loadHolidaysFromFile(String holidayFile) {
+    //ToDO
+    public static ReturnStatus cdsDateFwdAdj(LocalDate startDate,
+                                             TDateAdjIntvl adjIvl,
+                                             DateHolder result) {
+        switch (adjIvl.getIsBusDays()) {
+            case BUSINESS:
+                /**
+                 * offset by business days
+                 */
+                if (adjIvl.getInterval().periodType.equals(PeriodType.D)) {
+                   if ( cdsDateFromBusDayOffset(startDate, adjIvl.getInterval().prd, adjIvl.getCalendar(), result).equals(ReturnStatus.FAILURE)) {
+                       logger.error("Error in calculating busDayoffset");
+                       return ReturnStatus.FAILURE;
+                   }
+                } else {
+                    /**
+                     * Non-daily interval and offset by business days
+                     * This means that if the start date is the end of the business month,
+                     * then the end date must also be end of the month
+                     * Actually, we do adjust the end day by the bad day convention,
+                     * but in the context of generating a set of cash flow dates
+                     * this is often not done when computing the maturity date
+                     */
+                    DateHolder retValue = new DateHolder();
+                    if (cdsDateToBusinessEOM(startDate,  adjIvl.getCalendar(), retValue).equals(ReturnStatus.FAILURE))
+                    {
+                        logger.error("Error calculating EOM date");
+                        return ReturnStatus.FAILURE;
 
-        //TODO - implement
-        return new ArrayList<LocalDate>();
+                    }
+
+                    final LocalDate businessEOM = retValue.get();
+
+
+
+                }
+        }
+
+        return ReturnStatus.FAILURE;
+    }
+
+    public static ReturnStatus cdsDateToBusinessEOM (LocalDate input, String calendar, DateHolder result) {
+        /**
+         * Calculate the last day of the month
+         * Adjust backwards for holidays
+         */
+
+        final LocalDate monthEndDate = cdsDateToEOM(input);
+
+        final DateHolder returnDate = new DateHolder();
+        if(adjustedBusinessDay(monthEndDate, TBadDayConvention.PREVIOUS, calendar, returnDate).equals(ReturnStatus.FAILURE))
+        {
+            logger.error("Failed calculating adjusted business day");
+            return ReturnStatus.FAILURE;
+        }
+        result.set(returnDate.get());
+        return ReturnStatus.SUCCESS;
+
+    }
+
+    private static LocalDate cdsDateToEOM(LocalDate input) {
+        final int day = input.lengthOfMonth();
+        final int month = input.getMonthValue();
+        final int year = input.getYear();
+
+        return LocalDate.of(year, month, day);
+    }
+
+    public static ReturnStatus cdsDateFromBusDayOffset(
+            LocalDate fromDate,
+            long offset,
+            String calendar,
+            DateHolder result
+    ) {
+        HolidayCalendarFactory holidayCalendarFactory = (HolidayCalendarFactory) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
+        try {
+            HolidayCalendar holidayCalendar = holidayCalendarFactory.getCalendar(calendar);
+
+            result.set(holidayCalendar.addBusinessDays(fromDate, offset));
+            return ReturnStatus.SUCCESS;
+        } catch (Exception ex) {
+            logger.error(ex);
+            return ReturnStatus.FAILURE;
+        }
+    }
+
+    public static boolean IS_BETWEEN(LocalDate x, LocalDate a, LocalDate b) {
+        return a.isBefore(b)
+               ? (x.isEqual(a) || x.isAfter(a)) && (x.isEqual(b) || x.isBefore(b))
+               : (x.isEqual(b) || x.isAfter(b)) && (x.isEqual(a) || x.isBefore(a));
     }
 }

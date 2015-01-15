@@ -7,7 +7,7 @@ public class DoubleHolder {
     private double value;
 
     public DoubleHolder() {
-        this.value = 0;
+        this.value = -99;
     }
 
     public DoubleHolder(double value) {

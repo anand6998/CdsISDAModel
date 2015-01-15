@@ -1,4 +1,4 @@
-package com.anand.analytics.isdamodel.utils;
+package com.anand.analytics.isdamodel.domain;
 
 import org.threeten.bp.LocalDate;
 
