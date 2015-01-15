@@ -5,17 +5,22 @@ package com.anand.analytics.isdamodel.cds;
  */
 
 
+import com.anand.analytics.isdamodel.domain.TBadDayConvention;
+import com.anand.analytics.isdamodel.domain.TContingentLeg;
+import com.anand.analytics.isdamodel.domain.TCurve;
+import com.anand.analytics.isdamodel.domain.TDateInterval;
+import com.anand.analytics.isdamodel.domain.TFeeLeg;
+import com.anand.analytics.isdamodel.domain.TProtPayConv;
+import com.anand.analytics.isdamodel.domain.TStubMethod;
+import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.utils.CdsUtils;
 import com.anand.analytics.isdamodel.utils.DayCount;
 import com.anand.analytics.isdamodel.utils.DayCountBasis;
 import com.anand.analytics.isdamodel.utils.DoubleHolder;
+import com.anand.analytics.isdamodel.utils.ExcelFunctions;
 import com.anand.analytics.isdamodel.utils.IntHolder;
 import com.anand.analytics.isdamodel.utils.PeriodType;
 import com.anand.analytics.isdamodel.utils.ReturnStatus;
-import com.anand.analytics.isdamodel.utils.TBadDayConvention;
-import com.anand.analytics.isdamodel.utils.TDateInterval;
-import com.anand.analytics.isdamodel.utils.TProtPayConv;
-import com.anand.analytics.isdamodel.utils.TStubMethod;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Test;
@@ -25,7 +30,7 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
 import java.io.StringWriter;
 
-import static com.anand.analytics.isdamodel.cds.TDateFunctions.cdsDayCountFraction;
+import static com.anand.analytics.isdamodel.domain.TDateFunctions.cdsDayCountFraction;
 
 /**
  * Created by Anand on 10/28/2014.
@@ -450,7 +455,7 @@ public class TestCdsFunctions {
     @Test
     public void testBinarySearchLong() throws Exception {
         TCurve tCurve = setUpTCurve();
-        LocalDate[] xArray = tCurve.dates;
+        LocalDate[] xArray = tCurve.getDates();
 
         LocalDate xDesired = LocalDate.of(2019, 6, 20);
         IntHolder exact = new IntHolder(0);
@@ -475,14 +480,14 @@ public class TestCdsFunctions {
     }
 
     @Test
-    public void testStubMethodParser() {
+    public void testStubMethodParser() throws CdsLibraryException {
         String stubMethodString = "F/S";
         TStubMethod stubMethod = ExcelFunctions.cdsStringToStubMethod(stubMethodString);
         System.out.println(stubMethod);
     }
 
     @Test
-    public void testDccParser() {
+    public void testDccParser() throws CdsLibraryException {
         String dccString = "ACT/365F";
         DayCount dayCount = ExcelFunctions.cdsStringToDayCountConv(dccString);
         System.out.println(dayCount);
