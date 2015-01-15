@@ -47,4 +47,5 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.spri
         </constructor-arg>
     </bean>
 
+    <import resource="gridgain-config.xml"/>
 </beans>

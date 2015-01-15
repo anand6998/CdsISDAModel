@@ -5,6 +5,7 @@ package com.anand.analytics.isdamodel.cds;
  */
 
 
+import com.anand.analytics.isdamodel.context.XlServerSpringUtils;
 import com.anand.analytics.isdamodel.domain.TBadDayConvention;
 import com.anand.analytics.isdamodel.domain.TContingentLeg;
 import com.anand.analytics.isdamodel.domain.TCurve;
@@ -22,6 +23,11 @@ import com.anand.analytics.isdamodel.utils.IntHolder;
 import com.anand.analytics.isdamodel.utils.PeriodType;
 import com.anand.analytics.isdamodel.utils.ReturnStatus;
 import org.apache.log4j.Logger;
+import org.gridgain.grid.Grid;
+import org.gridgain.grid.GridConfiguration;
+import org.gridgain.grid.GridException;
+import org.gridgain.grid.GridGain;
+import org.gridgain.grid.cache.GridCache;
 import org.junit.Assert;
 import org.junit.Test;
 import org.threeten.bp.LocalDate;
@@ -470,6 +476,21 @@ public class TestCdsFunctions {
         Assert.assertEquals(-1, exact.get());
         Assert.assertEquals(29, loBound.get());
         Assert.assertEquals(30, hiBound.get());
+    }
+
+    @Test
+    public void testGgClient() throws GridException {
+        GridConfiguration configuration = (GridConfiguration) XlServerSpringUtils.getBeanByName("grid.cfg");
+        try (Grid g = GridGain.start(configuration)) {
+            GridCache<Integer, String> cache = g.cache("CdsCache");
+
+            // Store keys in cache (values will end up on different cache nodes).
+            for (int i = 0; i < 10; i++)
+                cache.putx(i, Integer.toString(i));
+
+            for (int i = 0; i < 10; i++)
+                System.out.println("Got [key=" + i + ", val=" + cache.get(i) + ']');
+        }
     }
 
     @Test

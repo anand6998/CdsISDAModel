@@ -4,7 +4,7 @@ package com.anand.analytics.isdamodel.utils;
  * Created by Anand on 10/22/2014.
  */
 public enum DayCountBasis {
-    CONTINUOUS_BASIS(5000, 1), DISCOUNT_RATE(512, 2), SIMPLE_BASIS(0, 3), ANNUAL_BASIS(1, 4), DISCOUNT_FACTOR(-2, 5);
+    CONTINUOUS_BASIS(5000, 1), DISCOUNT_RATE(512, 2), SIMPLE_BASIS(0, 3), ANNUAL_BASIS(1, 4), DISCOUNT_FACTOR(-2, 5), ZC_DEFAULT_BASIS(0, 0);
     private int value;
     private int index;
 

@@ -169,7 +169,11 @@ public class ZeroCurve {
     }
 
     public TCurve toTCurve() throws CdsLibraryException {
-        return new TCurve(valueDate, dates.toArray(new LocalDate[0]), ArrayUtils.toPrimitive( rates.toArray(new Double[0])), dayCountBasis, dayCount);
+        try {
+            return new TCurve(valueDate, dates.toArray(new LocalDate[0]), ArrayUtils.toPrimitive( rates.toArray(new Double[0])), dayCountBasis, dayCount);
+        } catch (Exception e) {
+            throw new CdsLibraryException(e.getMessage());
+        }
     }
 
     private double computeDiscount(LocalDate date, double rate) throws CdsLibraryException {
