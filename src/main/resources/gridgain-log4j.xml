@@ -96,6 +96,9 @@
     <category name="com.amazonaws">
         <level value="WARN"/>
     </category>
+    <category name="com.anand">
+        <level value="DEBUG"/>
+    </category>
     <!-- Default settings. -->
     <root>
         <!-- Print out all info by default. -->

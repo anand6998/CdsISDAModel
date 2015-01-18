@@ -44,7 +44,7 @@ public class CdsServices {
     private final GridCache<String, TCurve> tCurveGridCache;
 
     public CdsServices() {
-        logger.debug("CdsServices Initializing");
+        logger.info("CdsServices Initializing");
         gsonBuilder.registerTypeAdapter(CdsIrZeroCurveMakeParameters.class, new CdsIrZeroCurveMakeParametersJsonDeserializer());
         gsonBuilder.registerTypeAdapter(CdsDatesAndRatesParameters.class, new CdsDatesAndRatesParametersJsonDeserializer());
         grid = (Grid) XlServerSpringUtils.getBeanByName("gridGainBean");
@@ -88,12 +88,12 @@ public class CdsServices {
 
             final String tCurveKey = TCurveIdGenerator.id("CdsServices.cdsIrZeroCurveMake");
 
-            logger.debug("tCurveKey : " + tCurveKey);
+            logger.info("tCurveKey : " + tCurveKey);
             tCurveGridCache.putx(tCurveKey, tCurve);
             returnType.returnType = CommonConstants.SUCCESS;
             returnType.value = tCurveKey;
 
-            logger.debug(user + ": irZeroCurveMake : " + tCurveKey);
+            logger.info(user + ": irZeroCurveMake : " + tCurveKey);
 
         } catch (NullPointerException ex) {
             returnType.returnType = CommonConstants.FAILURE;
@@ -147,7 +147,7 @@ public class CdsServices {
             returnType.returnType = CommonConstants.SUCCESS;
             returnType.values = retArray;
 
-            logger.debug(user + " : cdsDatesAndRates : " + retArray);
+            logger.info(user + " : cdsDatesAndRates : " + retArray);
 
         } catch (Exception ex) {
             returnType.errorString = ex.getMessage();
