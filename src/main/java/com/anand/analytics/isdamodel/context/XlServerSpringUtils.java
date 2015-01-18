@@ -21,7 +21,8 @@ public class XlServerSpringUtils {
 
     public static void close() {
         try {
-            logger.debug("Closing spring context");
+            logger.info("Closing spring context");
+
             ((ClassPathXmlApplicationContext) applicationContext).close();
         } catch (Exception ex) {
             ex.printStackTrace();

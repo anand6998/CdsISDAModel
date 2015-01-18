@@ -24,9 +24,6 @@ import com.anand.analytics.isdamodel.utils.PeriodType;
 import com.anand.analytics.isdamodel.utils.ReturnStatus;
 import org.apache.log4j.Logger;
 import org.gridgain.grid.Grid;
-import org.gridgain.grid.GridConfiguration;
-import org.gridgain.grid.GridException;
-import org.gridgain.grid.GridGain;
 import org.gridgain.grid.cache.GridCache;
 import org.junit.Assert;
 import org.junit.Test;
@@ -35,6 +32,7 @@ import org.threeten.bp.LocalDate;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
 import java.io.StringWriter;
+import java.util.UUID;
 
 import static com.anand.analytics.isdamodel.domain.TDateFunctions.cdsDayCountFraction;
 
@@ -479,18 +477,18 @@ public class TestCdsFunctions {
     }
 
     @Test
-    public void testGgClient() throws GridException {
-        GridConfiguration configuration = (GridConfiguration) XlServerSpringUtils.getBeanByName("grid.cfg");
-        try (Grid g = GridGain.start(configuration)) {
-            GridCache<Integer, String> cache = g.cache("CdsCache");
+    public void testGgClient() throws Exception {
+//        GridManager gridManager = (GridManager) XlServerSpringUtils.getBeanByName("gridManager");
+        Grid grid = (Grid) XlServerSpringUtils.getBeanByName("gridGainBean");
+        GridCache<String, TCurve> tCurveGridCache = grid.cache("Cds2Cache");
 
-            // Store keys in cache (values will end up on different cache nodes).
-            for (int i = 0; i < 10; i++)
-                cache.putx(i, Integer.toString(i));
+        TCurve tCurve = setUpTCurve();
+        String curveKey = "TCurve@" + UUID.randomUUID();
 
-            for (int i = 0; i < 10; i++)
-                System.out.println("Got [key=" + i + ", val=" + cache.get(i) + ']');
-        }
+        tCurveGridCache.putx(curveKey, tCurve);
+
+        TCurve retCurve = tCurveGridCache.get(curveKey);
+        System.out.println(retCurve.getBaseDate());
     }
 
     @Test

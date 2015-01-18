@@ -17,8 +17,10 @@ public class HolidayListReader {
         final List<LocalDate> dates = new ArrayList<>(holidays.size());
         for (int i = 0; i < holidays.size(); i++) {
             LocalDate localDate = LocalDate.parse(holidays.get(i), formatter);
+
             dates.add(localDate);
         }
+
 
         return dates;
     }

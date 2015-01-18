@@ -43,6 +43,7 @@
     -->
     <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
         <property name="peerClassLoadingEnabled" value="true"/>
+        <property name="gridName" value="cdsIsdaModelGrid"/>
         <!-- Cache configurations. -->
         <property name="cacheConfiguration">
             <list>
@@ -50,18 +51,42 @@
                     <!-- Set a cache name: "myCache". -->
                     <property name="name" value="Cds2Cache"/>
                     <property name="cacheMode" value="REPLICATED"/>
-                    <property name="distributionMode" value="CLIENT_ONLY"/>
+                    <!--<property name="distributionMode" value="CLIENT_ONLY"/>-->
                 </bean>
             </list>
         </property>
 
-        <!-- Streamer configurations. -->
-        <property name="streamerConfiguration">
+        <property name="gridLogger">
+            <bean
+                    class="org.gridgain.grid.logger.log4j.GridLog4jLogger">
+                <constructor-arg ref="log4jLogger" />
+            </bean>
+        </property>
+
+    </bean>
+    <bean name="log4jLogger" class="org.apache.log4j.Logger"
+          factory-method="getRootLogger"></bean>
+
+    <bean id="log4jInitialization"
+          class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetClass"
+                  value="org.springframework.util.Log4jConfigurer" />
+        <property name="targetMethod"
+                  value="initLogging" />
+        <property name="arguments">
             <list>
-                <!--
-                    Specify list of streamer configurations here.
-                -->
+                <value>classpath:gridgain-log4j.xml</value>
             </list>
         </property>
     </bean>
+
+    <!--<bean id="gridManager" class="com.anand.analytics.isdamodel.grid.GridManager">-->
+        <!--<constructor-arg index="0" ref="grid.cfg"/>-->
+    <!--</bean>-->
+
+
+     <bean id="gridGainBean" class="org.gridgain.grid.GridSpringBean" scope="singleton">
+        <property name="configuration" ref="grid.cfg"/>
+    </bean>
+
 </beans>
