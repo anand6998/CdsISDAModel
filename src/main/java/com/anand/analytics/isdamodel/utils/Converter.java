@@ -8,10 +8,11 @@ import com.anand.analytics.isdamodel.domain.TCurve;
 import com.anand.analytics.isdamodel.domain.TDateInterval;
 import com.anand.analytics.isdamodel.domain.TStubMethod;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
-import com.anand.analytics.isdamodel.grid.GridManager;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import org.gridgain.grid.Grid;
 import org.gridgain.grid.GridException;
+import org.gridgain.grid.cache.GridCache;
 import org.threeten.bp.LocalDate;
 
 /**
@@ -99,8 +100,9 @@ public class Converter {
     }
 
     public static TCurve extractCurveHandle(JsonObject jsonObject, String fieldName) throws GridException {
-        GridManager gridManager = (GridManager) XlServerSpringUtils.getBeanByName("gridManager");
-        TCurve tCurve = gridManager.get(extractString(jsonObject, fieldName));
+        Grid grid = (Grid) XlServerSpringUtils.getBeanByName("gridGainBean");
+        GridCache<String, TCurve> gridCache = grid.cache("Cds2Cache");
+        TCurve tCurve = gridCache.get(extractString(jsonObject, fieldName));
         return tCurve;
     }
 
