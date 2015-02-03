@@ -234,7 +234,6 @@ public class Day implements Serializable, Comparable<Day>, Cloneable {
     public boolean isWeekendDay() {
         //SUNDAY = 0 ; SATURDAY = 6
         int dayOfWeek = (jdn + 1) % 7;
-
         return (dayOfWeek == 0 || dayOfWeek == 6) ? true : false;
     }
 
