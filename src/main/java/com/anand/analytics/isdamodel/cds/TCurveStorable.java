@@ -5,7 +5,7 @@ import com.anand.analytics.isdamodel.cds.xml.DayCountXmlAdapter;
 import com.anand.analytics.isdamodel.cds.xml.LocalDateXmlAdapter;
 import com.anand.analytics.isdamodel.utils.DayCount;
 import com.anand.analytics.isdamodel.utils.DayCountBasis;
-import org.threeten.bp.LocalDate;
+import com.anand.analytics.isdamodel.date.Day;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
@@ -19,7 +19,7 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 public class TCurveStorable {
 
     public TCurveStorable() {}
-    public TCurveStorable(LocalDate baseDate, LocalDate[] dates, double[] rates, DayCountBasis basis, DayCount dayCountConv) {
+    public TCurveStorable(Day baseDate, Day[] dates, double[] rates, DayCountBasis basis, DayCount dayCountConv) {
         this.baseDate = baseDate;
         this.dates = dates;
         this.rates = rates;
@@ -27,13 +27,13 @@ public class TCurveStorable {
         this.dayCountConv = dayCountConv;
     }
 
-    @XmlJavaTypeAdapter(type = LocalDate.class, value = LocalDateXmlAdapter.class)
-    LocalDate baseDate;
+    @XmlJavaTypeAdapter(type = Day.class, value = LocalDateXmlAdapter.class)
+    Day baseDate;
 
     @XmlElementWrapper(name = "dates")
     @XmlElement(name = "date")
-    @XmlJavaTypeAdapter(type = LocalDate.class, value = LocalDateXmlAdapter.class)
-    LocalDate[] dates;
+    @XmlJavaTypeAdapter(type = Day.class, value = LocalDateXmlAdapter.class)
+    Day[] dates;
 
     @XmlElementWrapper(name = "rates")
     @XmlElement(name = "rate")

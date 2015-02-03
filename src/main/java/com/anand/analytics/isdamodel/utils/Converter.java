@@ -13,15 +13,15 @@ import com.google.gson.JsonObject;
 import org.gridgain.grid.Grid;
 import org.gridgain.grid.GridException;
 import org.gridgain.grid.cache.GridCache;
-import org.threeten.bp.LocalDate;
+import com.anand.analytics.isdamodel.date.Day;
 
 /**
  * Created by Anand on 1/18/2015.
  */
 public class Converter {
-    public static LocalDate extractDateFromDouble(JsonObject jsonObject, String fieldName) {
+    public static Day extractDateFromDouble(JsonObject jsonObject, String fieldName) {
         double xlDate = jsonObject.get(fieldName).getAsDouble();
-        LocalDate localDate = ExcelFunctions.xlDateToLocalDateTime(xlDate);
+        Day localDate = ExcelFunctions.xlDateToLocalDateTime(xlDate);
         return localDate;
     }
 
@@ -29,9 +29,9 @@ public class Converter {
         return jsonObject.get(fieldName).getAsDouble();
     }
 
-    public static LocalDate[] extractDatesFromDoubles(JsonObject jsonObject, String fieldName) {
+    public static Day[] extractDatesFromDoubles(JsonObject jsonObject, String fieldName) {
         JsonArray xlDates = jsonObject.get(fieldName).getAsJsonArray();
-        LocalDate dates[] = new LocalDate[xlDates.size()];
+        Day dates[] = new Day[xlDates.size()];
         for (int i = 0; i < xlDates.size(); i++)
             dates[i] = ExcelFunctions.xlDateToLocalDateTime(xlDates.get(i).getAsDouble());
         return dates;

@@ -1,6 +1,7 @@
 package com.anand.analytics.isdamodel.server;
 
 import com.anand.analytics.isdamodel.context.XlServerSpringUtils;
+import com.anand.analytics.isdamodel.date.Day;
 import com.anand.analytics.isdamodel.domain.TCurve;
 import com.anand.analytics.isdamodel.utils.CdsDatesAndRatesParameters;
 import com.anand.analytics.isdamodel.utils.CdsDatesAndRatesParametersJsonDeserializer;
@@ -20,7 +21,6 @@ import com.google.gson.JsonParser;
 import org.apache.log4j.Logger;
 import org.gridgain.grid.Grid;
 import org.gridgain.grid.cache.GridCache;
-import org.threeten.bp.LocalDate;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -74,8 +74,8 @@ public class CdsServices {
                     = gson.fromJson(obj, CdsIrZeroCurveMakeParameters.class);
 
             final String user = cdsIrZeroCurveMakeParameters.user;
-            final LocalDate baseDate = cdsIrZeroCurveMakeParameters.baseDate;
-            final LocalDate[] dates = cdsIrZeroCurveMakeParameters.dates;
+            final Day baseDate = cdsIrZeroCurveMakeParameters.baseDate;
+            final Day[] dates = cdsIrZeroCurveMakeParameters.dates;
             final double[] rates = cdsIrZeroCurveMakeParameters.rates;
             final DayCount dayCount = cdsIrZeroCurveMakeParameters.dayCount;
             final DayCountBasis dayCountBasis = cdsIrZeroCurveMakeParameters.basis;
@@ -128,7 +128,7 @@ public class CdsServices {
             final String user = parameters.user;
             final TCurve curve = parameters.curve;
 
-            final LocalDate[] dates = curve.getDates();
+            final Day[] dates = curve.getDates();
             final double[] rates = curve.getRates();
 
             final List<double[]> retArray = new ArrayList<double[]>(dates.length);

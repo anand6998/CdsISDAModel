@@ -1,11 +1,11 @@
 package com.anand.analytics.isdamodel.utils;
 
+import com.anand.analytics.isdamodel.date.Day;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import org.threeten.bp.LocalDate;
 
 import java.lang.reflect.Type;
 
@@ -19,8 +19,8 @@ public class CdsIrZeroCurveMakeParametersJsonDeserializer implements JsonDeseria
         try {
             JsonObject jsonObject = json.getAsJsonObject();
             //region
-            LocalDate baseDate = Converter.extractDateFromDouble(jsonObject, CommonConstants.BASE_DATE);
-            LocalDate dates[] = Converter.extractDatesFromDoubles(jsonObject, CommonConstants.DATES);
+            Day baseDate = Converter.extractDateFromDouble(jsonObject, CommonConstants.BASE_DATE);
+            Day dates[] = Converter.extractDatesFromDoubles(jsonObject, CommonConstants.DATES);
             double[] rates = Converter.extractDoubles(jsonObject, CommonConstants.RATES);
 
             DayCount dcc = DayCount.ACT_360;

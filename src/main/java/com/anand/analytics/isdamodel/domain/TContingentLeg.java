@@ -1,13 +1,12 @@
 package com.anand.analytics.isdamodel.domain;
 
 
+import com.anand.analytics.isdamodel.date.Day;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.utils.DoubleHolder;
 import com.anand.analytics.isdamodel.utils.ReturnStatus;
 import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
-import org.threeten.bp.LocalDate;
-import org.threeten.bp.temporal.ChronoUnit;
 
 /**
  * Created by Anand on 10/21/2014.
@@ -18,11 +17,11 @@ public class TContingentLeg {
     /**
      * Start date of protection. You are protected from the end of this date.
      */
-    LocalDate startDate;
+    Day startDate;
     /**
      * End date of protection.
      */
-    final LocalDate endDate;
+    final Day endDate;
     /**
      * Notional.
      */
@@ -33,7 +32,7 @@ public class TContingentLeg {
      */
     final boolean protectStart;
 
-    public TContingentLeg(LocalDate startDate, LocalDate endDate, double notional, boolean protectStart, TProtPayConv payType)
+    public TContingentLeg(Day startDate, Day endDate, double notional, boolean protectStart, TProtPayConv payType)
             throws CdsLibraryException {
         this.startDate = startDate;
         this.endDate = endDate;
@@ -68,9 +67,9 @@ public class TContingentLeg {
      * * payment date and not at the observation date.
      * **************************************************************************
      */
-    public ReturnStatus getPV(LocalDate today,
-                              LocalDate valueDate,
-                              LocalDate stepInDate,
+    public ReturnStatus getPV(Day today,
+                              Day valueDate,
+                              Day stepInDate,
                               TCurve discountCurve,
                               TCurve spreadCurve,
                               double recoveryRate,
@@ -90,7 +89,7 @@ public class TContingentLeg {
             Validate.isTrue(TRateFunctions.cdsZeroPrice(discountCurve, endDate) > CDS_LOG0_THRESHOLD, "cdsZeroPrice < CDS_LOG0_THRESHOLD");
 
             offset = protectStart ? 1 : 0;
-            LocalDate startDate = max(this.startDate, stepInDate.minusDays(offset));
+            Day startDate = max(this.startDate, stepInDate.minusDays(offset));
             startDate = max(startDate, today.minusDays(offset));
 
             switch (payType) {
@@ -141,9 +140,9 @@ public class TContingentLeg {
     /**
      * Computes a one period integral
      */
-    private ReturnStatus onePeriodIntegral(LocalDate today,
-                                           LocalDate startDate,
-                                           LocalDate endDate,
+    private ReturnStatus onePeriodIntegral(Day today,
+                                           Day startDate,
+                                           Day endDate,
                                            TCurve discountCurve,
                                            TCurve spreadCurve, double recoveryRate, DoubleHolder pv) {
         try {
@@ -185,7 +184,8 @@ public class TContingentLeg {
                     df0 = df1;
                     s1 = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, tl.dateArray[i]);
                     df1 = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, tl.dateArray[i]);
-                    t = (double) (tl.dateArray[i - 1].periodUntil(tl.dateArray[i], ChronoUnit.DAYS)) / 365.;
+                    //t = (double) (tl.dateArray[i - 1].periodUntil(tl.dateArray[i], ChronoUnit.DAYS)) / 365.;
+                    t = (double) (tl.dateArray[i - 1].getDaysBetween(tl.dateArray[i]) / 365.);
 
                     /*************************Markit Proposed Fix***************************************************
                      *
@@ -239,10 +239,10 @@ public class TContingentLeg {
      * * This is actually trivial.
      * **************************************************************************
      */
-    private ReturnStatus onePeriodIntegralAtPayDate(LocalDate today,
-                                                    LocalDate startDate,
-                                                    LocalDate endDate,
-                                                    LocalDate payDate,
+    private ReturnStatus onePeriodIntegralAtPayDate(Day today,
+                                                    Day startDate,
+                                                    Day endDate,
+                                                    Day payDate,
                                                     TCurve discountCurve,
                                                     TCurve spreadCurve,
                                                     double recoveryRate,
@@ -274,7 +274,7 @@ public class TContingentLeg {
 
     }
 
-    public LocalDate max(LocalDate d1, LocalDate d2) {
+    public Day max(Day d1, Day d2) {
         return d1.isAfter(d2) ? d1 : d2;
     }
 }

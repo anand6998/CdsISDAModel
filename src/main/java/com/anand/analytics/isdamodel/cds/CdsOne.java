@@ -1,6 +1,7 @@
 package com.anand.analytics.isdamodel.cds;
 
 
+import com.anand.analytics.isdamodel.date.Day;
 import com.anand.analytics.isdamodel.domain.CdsSpreadContext;
 import com.anand.analytics.isdamodel.domain.TBadDayConvention;
 import com.anand.analytics.isdamodel.domain.TContingentLeg;
@@ -17,7 +18,6 @@ import com.anand.analytics.isdamodel.utils.RootFindBrent;
 import com.anand.analytics.isdamodel.utils.SolvableFunction;
 import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
-import org.threeten.bp.LocalDate;
 
 /**
  * Created by Anand on 10/21/2014.
@@ -62,12 +62,12 @@ public class CdsOne {
      * Computes the flat spread required to match the upfront charge
      */
     final static Logger logger = Logger.getLogger(CdsOne.class);
-    public static ReturnStatus cdsCdsoneSpread(LocalDate today,
-                                               LocalDate valueDate,
-                                               LocalDate benchmarkStartDate,
-                                               LocalDate stepinDate,
-                                               LocalDate startDate,
-                                               LocalDate endDate,
+    public static ReturnStatus cdsCdsoneSpread(Day today,
+                                               Day valueDate,
+                                               Day benchmarkStartDate,
+                                               Day stepinDate,
+                                               Day startDate,
+                                               Day endDate,
                                                double couponRate,
                                                boolean payAccruedOnDefault,
                                                TDateInterval dateInterval,
@@ -120,10 +120,10 @@ public class CdsOne {
     }
 
     public static ReturnStatus cdsCdsParSpreads(
-        LocalDate today,
-        LocalDate stepinDate,
-        LocalDate startDate,
-        LocalDate[] endDates,
+        Day today,
+        Day stepinDate,
+        Day startDate,
+        Day[] endDates,
         boolean payAccOnDefault,
         TDateInterval couponInterval,
         TStubMethod stubType,
@@ -195,12 +195,12 @@ public class CdsOne {
     }
 
     public static ReturnStatus cdsCdsoneUpfrontCharge(
-            LocalDate today,
-            LocalDate valueDate,
-            LocalDate benchmarkStartDate,
-            LocalDate stepinDate,
-            LocalDate startDate,
-            LocalDate endDate,
+            Day today,
+            Day valueDate,
+            Day benchmarkStartDate,
+            Day stepinDate,
+            Day startDate,
+            Day endDate,
             double couponRate,
             boolean payAccruedOnDefault,
             TDateInterval dateInterval,
@@ -220,7 +220,7 @@ public class CdsOne {
 
         final TCurve flatSpreadCurve;
 
-        final LocalDate endDates[] = {endDate};
+        final Day endDates[] = {endDate};
         final double[] couponRates = {oneSpread};
 
         try {
@@ -270,11 +270,11 @@ public class CdsOne {
         return ReturnStatus.SUCCESS;
     }
 
-    public static ReturnStatus cdsCdsPrice(LocalDate today,
-                                            LocalDate settleDate,
-                                            LocalDate stepinDate,
-                                            LocalDate startDate,
-                                            LocalDate endDate,
+    public static ReturnStatus cdsCdsPrice(Day today,
+                                            Day settleDate,
+                                            Day stepinDate,
+                                            Day startDate,
+                                            Day endDate,
                                             double couponRate,
                                             boolean payAccruedOnDefault,
                                             TDateInterval dateInterval,
@@ -296,7 +296,7 @@ public class CdsOne {
         Validate.notNull (price, "price is null");
         Validate.isTrue (stepinDate.isAfter(today) || stepinDate.isEqual(today), "stepinDate < today");
 
-        final LocalDate valueDate = settleDate;
+        final Day valueDate = settleDate;
         if (cdsCdsFeeLegPV(today,
                 valueDate,
                 stepinDate,
@@ -319,7 +319,7 @@ public class CdsOne {
             return ReturnStatus.FAILURE;
         }
 
-        final LocalDate maxDate = stepinDate.isAfter(startDate) ? stepinDate : startDate;
+        final Day maxDate = stepinDate.isAfter(startDate) ? stepinDate : startDate;
         if (maxDate.isEqual(endDate) || maxDate.isBefore(endDate)) {
             if (cdsCdsContingentLegPV(today,
                     valueDate,
@@ -340,10 +340,10 @@ public class CdsOne {
         return ReturnStatus.SUCCESS;
     }
 
-    private static ReturnStatus cdsCdsContingentLegPV(LocalDate today,
-                                                      LocalDate valueDate,
-                                                      LocalDate startDate,
-                                                      LocalDate endDate,
+    private static ReturnStatus cdsCdsContingentLegPV(Day today,
+                                                      Day valueDate,
+                                                      Day startDate,
+                                                      Day endDate,
                                                       double notional,
                                                       TCurve discCurve,
                                                       TCurve spreadCurve,
@@ -364,11 +364,11 @@ public class CdsOne {
         }
     }
 
-    private static ReturnStatus cdsCdsFeeLegPV(LocalDate today,
-                                               LocalDate valueDate,
-                                               LocalDate stepinDate,
-                                               LocalDate startDate,
-                                               LocalDate endDate,
+    private static ReturnStatus cdsCdsFeeLegPV(Day today,
+                                               Day valueDate,
+                                               Day stepinDate,
+                                               Day startDate,
+                                               Day endDate,
                                                boolean payAccruedOnDefault,
                                                TDateInterval dateInterval,
                                                TStubMethod stubType,

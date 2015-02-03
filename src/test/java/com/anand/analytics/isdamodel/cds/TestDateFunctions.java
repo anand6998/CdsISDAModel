@@ -24,7 +24,7 @@ public class TestDateFunctions {
         System.out.println("Time : " + (endTime - startTime));
         System.out.println();
 
-        LocalDate localDate = LocalDate.of(2015, 1, 1);
+        Day localDate = new Day(2015, 1, 1);
         System.out.println(localDate);
 
         startTime = System.currentTimeMillis();

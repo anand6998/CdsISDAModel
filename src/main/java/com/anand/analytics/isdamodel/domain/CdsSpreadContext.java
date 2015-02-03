@@ -1,20 +1,20 @@
 package com.anand.analytics.isdamodel.domain;
 
 
+import com.anand.analytics.isdamodel.date.Day;
 import com.anand.analytics.isdamodel.utils.DayCount;
-import org.threeten.bp.LocalDate;
 
 /**
  * Created by Anand on 10/21/2014.
  */
 public class CdsSpreadContext {
-    public LocalDate today;
-    public LocalDate valueDate;
-    public LocalDate benchmarkStartDate; /* start date of benchmark CDS for
+    public Day today;
+    public Day valueDate;
+    public Day benchmarkStartDate; /* start date of benchmark CDS for
                                         ** internal clean spread bootstrapping */
-    public LocalDate stepinDate;
-    public LocalDate startDate;
-    public LocalDate endDate;
+    public Day stepinDate;
+    public Day startDate;
+    public Day endDate;
     public double couponRate;
     public boolean payAccruedOnDefault;
     public TDateInterval dateInterval;

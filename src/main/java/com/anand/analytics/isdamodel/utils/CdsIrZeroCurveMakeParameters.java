@@ -1,22 +1,22 @@
 package com.anand.analytics.isdamodel.utils;
 
-import org.threeten.bp.LocalDate;
+import com.anand.analytics.isdamodel.date.Day;
 
 /**
  * Created by Anand on 1/18/2015.
  */
 public class CdsIrZeroCurveMakeParameters {
 
-    public final LocalDate baseDate;
-    public final  LocalDate[] dates;
+    public final Day baseDate;
+    public final  Day[] dates;
     public final  double[] rates;
     public final  DayCountBasis basis;
     public final  DayCount dayCount;
     public final  String user;
 
 
-    public CdsIrZeroCurveMakeParameters(LocalDate baseDate,
-                                        LocalDate[] dates,
+    public CdsIrZeroCurveMakeParameters(Day baseDate,
+                                        Day[] dates,
                                         double[] rates,
                                         DayCountBasis basis,
                                         DayCount dayCount,

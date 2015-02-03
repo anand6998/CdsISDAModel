@@ -2,8 +2,6 @@ package com.anand.analytics.isdamodel.date;
 
 import com.anand.analytics.isdamodel.domain.TBadDayConvention;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
-import org.threeten.bp.DayOfWeek;
-import org.threeten.bp.LocalDate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,13 +10,13 @@ import java.util.List;
  * Created by anand on 12/27/14.
  */
 public class MultiHolidayCalendar implements HolidayCalendar {
-    protected final List<LocalDate> holidays;
+    protected final List<Day> holidays;
     protected final List<DayOfWeek> weekendDays;
     protected final HolidayListReader holidayListReader;
     protected final HolidayCalendarFunctions holidayCalendarFunctions;
 
     public MultiHolidayCalendar(List<HolidayCalendar> holidayCalendars, HolidayListReader reader, HolidayCalendarFunctions functions) {
-        List<LocalDate> mergedHolidays = new ArrayList<>();
+        List<Day> mergedHolidays = new ArrayList<>();
         List<DayOfWeek> mergedWeekends = new ArrayList<>();
         mergeHolidays(holidayCalendars, mergedHolidays, mergedWeekends);
 
@@ -29,11 +27,11 @@ public class MultiHolidayCalendar implements HolidayCalendar {
 
     }
 
-    private void mergeHolidays(List<HolidayCalendar> holidayCalendars, List<LocalDate> mergedHolidays, List<DayOfWeek> mergedWeekends) {
+    private void mergeHolidays(List<HolidayCalendar> holidayCalendars, List<Day> mergedHolidays, List<DayOfWeek> mergedWeekends) {
 
         for (HolidayCalendar calendar : holidayCalendars) {
-            List<LocalDate> holidaysForCalendar = calendar.getHolidays();
-            for (LocalDate date : holidaysForCalendar) {
+            List<Day> holidaysForCalendar = calendar.getHolidays();
+            for (Day date : holidaysForCalendar) {
                 if (!mergedHolidays.contains(date))
                     mergedHolidays.add(date);
             }
@@ -47,7 +45,7 @@ public class MultiHolidayCalendar implements HolidayCalendar {
     }
 
     @Override
-    public List<LocalDate> getHolidays() {
+    public List<Day> getHolidays() {
         return holidays;
     }
 
@@ -57,23 +55,23 @@ public class MultiHolidayCalendar implements HolidayCalendar {
     }
 
     @Override
-    public LocalDate getNextBusinessDay(LocalDate input, int sign) {
+    public Day getNextBusinessDay(Day input, int sign) {
         return holidayCalendarFunctions.getNextBusinessDay(input, sign, weekendDays, holidays);
     }
 
     @Override
-    public LocalDate addBusinessDays(LocalDate input, long numBusDays) {
+    public Day addBusinessDays(Day input, long numBusDays) {
         return holidayCalendarFunctions.addBusinessDays(input, numBusDays, weekendDays, holidays);
     }
 
     @Override
-    public LocalDate getNextBusinessDay(LocalDate input, TBadDayConvention badDayConvention) throws CdsLibraryException {
+    public Day getNextBusinessDay(Day input, TBadDayConvention badDayConvention) throws CdsLibraryException {
         return holidayCalendarFunctions.getNextBusinessDay(input, badDayConvention, weekendDays, holidays);
     }
 
     @Override
-    public LocalDate[] adjustBusinessDays(LocalDate[] inputs, TBadDayConvention badDayConvention) throws CdsLibraryException {
-        LocalDate[] retList = new LocalDate[inputs.length];
+    public Day[] adjustBusinessDays(Day[] inputs, TBadDayConvention badDayConvention) throws CdsLibraryException {
+        Day[] retList = new Day[inputs.length];
         for (int idx = 0; idx < inputs.length; idx++)
             retList[idx] = getNextBusinessDay(inputs[idx], badDayConvention);
 
@@ -81,7 +79,7 @@ public class MultiHolidayCalendar implements HolidayCalendar {
     }
 
     @Override
-    public boolean isHoliday(LocalDate input) {
+    public boolean isHoliday(Day input) {
         boolean isBusinessDay = holidayCalendarFunctions.isBusinessDay(input, weekendDays, holidays);
         if (!isBusinessDay)
             return true;

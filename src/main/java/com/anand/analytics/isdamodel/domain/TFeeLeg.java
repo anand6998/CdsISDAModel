@@ -1,12 +1,17 @@
 package com.anand.analytics.isdamodel.domain;
 
 
+import com.anand.analytics.isdamodel.date.Day;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
-import com.anand.analytics.isdamodel.utils.*;
+import com.anand.analytics.isdamodel.utils.CdsUtils;
+import com.anand.analytics.isdamodel.utils.DateHolder;
+import com.anand.analytics.isdamodel.utils.DayCount;
+import com.anand.analytics.isdamodel.utils.DoubleHolder;
+import com.anand.analytics.isdamodel.utils.IntHolder;
+import com.anand.analytics.isdamodel.utils.PeriodType;
+import com.anand.analytics.isdamodel.utils.ReturnStatus;
 import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
-import org.threeten.bp.LocalDate;
-import org.threeten.bp.temporal.ChronoUnit;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,17 +37,17 @@ public class TFeeLeg {
      * Array of size nbDates.
      * Start date for calculating accrued interest.
      */
-    final LocalDate[] accStartDates;
+    final Day[] accStartDates;
     /**
      * Array of size nbDates.
      * End date for calculating accrued interest.
      */
-    final LocalDate[] accEndDates;
+    final Day[] accEndDates;
     /**
      * Array of size nbDates.
      * Payment date for each fee payment.
      */
-    final LocalDate[] payDates;
+    final Day[] payDates;
     /**
      * Notional
      */
@@ -67,8 +72,8 @@ public class TFeeLeg {
     final boolean obsStartOfDay;
 
     public TFeeLeg(
-            LocalDate startDate,
-            LocalDate endDate,
+            Day startDate,
+            Day endDate,
             boolean payAccruedOnDefault,
             TDateInterval dateInterval,
             TStubMethod stubType,
@@ -85,7 +90,7 @@ public class TFeeLeg {
             dateInterval = ivl3M;
 
         if (protectStart && endDate.isEqual(startDate)) {
-            LocalDate[] dates = new LocalDate[2];
+            Day[] dates = new Day[2];
             dates[0] = startDate;
             dates[1] = endDate;
             dl = new TDateList();
@@ -98,20 +103,20 @@ public class TFeeLeg {
         /* the datelist includes both start date and end date */
         /* therefore it has one more element than the fee leg requires */
         int numItems = dl.fNumItems - 1;
-        this.accStartDates = new LocalDate[numItems];
-        this.accEndDates = new LocalDate[numItems];
-        this.payDates = new LocalDate[numItems];
+        this.accStartDates = new Day[numItems];
+        this.accEndDates = new Day[numItems];
+        this.payDates = new Day[numItems];
         this.nbDates = numItems;
 
         this.accrualPayConv = payAccruedOnDefault ? TAccrualPayConv.ACCRUAL_PAY_ALL
                 : TAccrualPayConv.ACCRUAL_PAY_NONE;
         this.dcc = paymentDcc;
 
-        LocalDate prevDate = dl.dateArray[0];
-        LocalDate prevDateAdj = prevDate; /*first date is not bad day adjusted*/
+        Day prevDate = dl.dateArray[0];
+        Day prevDateAdj = prevDate; /*first date is not bad day adjusted*/
 
         for (int i = 0; i < nbDates; i++) {
-            final LocalDate nextDate = dl.dateArray[i + 1];
+            final Day nextDate = dl.dateArray[i + 1];
             final DateHolder nextDateAdj = new DateHolder();
 
             if (adjustedBusinessDay(nextDate, badDayConv, calendar, nextDateAdj).equals(ReturnStatus.FAILURE)) {
@@ -143,15 +148,15 @@ public class TFeeLeg {
         return nbDates;
     }
 
-    public LocalDate[] getAccStartDates() {
+    public Day[] getAccStartDates() {
         return accStartDates;
     }
 
-    public LocalDate[] getAccEndDates() {
+    public Day[] getAccEndDates() {
         return accEndDates;
     }
 
-    public LocalDate[] getPayDates() {
+    public Day[] getPayDates() {
         return payDates;
     }
 
@@ -175,9 +180,9 @@ public class TFeeLeg {
         return obsStartOfDay;
     }
 
-    public ReturnStatus getPV(LocalDate today,
-                              LocalDate valueDate,
-                              LocalDate stepinDate,
+    public ReturnStatus getPV(Day today,
+                              Day valueDate,
+                              Day stepinDate,
                               TCurve discountCurve,
                               TCurve spreadCurve,
                               boolean payAccruedAtStart,
@@ -187,7 +192,7 @@ public class TFeeLeg {
             double myPv = 0.0;
             double valueDatePv;
 
-            LocalDate matDate;
+            Day matDate;
             TDateList tl = null;
 
 
@@ -206,8 +211,8 @@ public class TFeeLeg {
                  * truncate is for each payment
                  *
                  */
-                LocalDate startDate = accStartDates[0];
-                LocalDate endDate = accEndDates[nbDates - 1];
+                Day startDate = accStartDates[0];
+                Day endDate = accEndDates[nbDates - 1];
 
                 double rate = TRateFunctions.cdsZeroPrice(spreadCurve, endDate);
                 Validate.isTrue(rate > CDS_LOG0_THRESHOLD, "rate < CDS_LOG0_THRESHOLD");
@@ -263,7 +268,7 @@ public class TFeeLeg {
         }
     }
 
-    private ReturnStatus feeLegAI(LocalDate today, DoubleHolder ai) {
+    private ReturnStatus feeLegAI(Day today, DoubleHolder ai) {
         IntHolder exact = new IntHolder();
         IntHolder lo = new IntHolder();
         IntHolder hi = new IntHolder();
@@ -312,11 +317,11 @@ public class TFeeLeg {
 
 
     ReturnStatus feePaymentPVWithTimeline(TAccrualPayConv accrualPayConv,
-                                          LocalDate today,
-                                          LocalDate stepInDate,
-                                          LocalDate accStartDate,
-                                          LocalDate accEndDate,
-                                          LocalDate payDate,
+                                          Day today,
+                                          Day stepInDate,
+                                          Day accStartDate,
+                                          Day accEndDate,
+                                          Day payDate,
                                           DayCount accruedDCC,
                                           double notional,
                                           double couponRate,
@@ -403,10 +408,10 @@ public class TFeeLeg {
         }
     }
 
-    private ReturnStatus cdsAccrualOnDefaultPVWithTimeLine(LocalDate today,
-                                                           LocalDate stepinDate,
-                                                           LocalDate startDate,
-                                                           LocalDate endDate,
+    private ReturnStatus cdsAccrualOnDefaultPVWithTimeLine(Day today,
+                                                           Day stepinDate,
+                                                           Day startDate,
+                                                           Day endDate,
                                                            double amount,
                                                            TCurve discountCurve,
                                                            TCurve spreadCurve,
@@ -416,7 +421,7 @@ public class TFeeLeg {
             double myPv = 0;
 
             double t, s0, s1, df0, df1, accRate;
-            LocalDate subStartDate;
+            Day subStartDate;
             TDateList tl = null;
 
             Validate.isTrue(endDate.isAfter(startDate), "endDate < startDate");
@@ -431,8 +436,8 @@ public class TFeeLeg {
              */
 
             if (criticalDates != null) {
-                List<LocalDate> dateList = Arrays.asList(criticalDates.dateArray);
-                List<LocalDate> truncDates = cdsTruncateTimeLine(criticalDates, startDate, endDate);
+                List<Day> dateList = Arrays.asList(criticalDates.dateArray);
+                List<Day> truncDates = cdsTruncateTimeLine(criticalDates, startDate, endDate);
                 //if(!(date.isBefore(startDate) || date.isAfter(endDate)))
 
                 tl = new TDateList(truncDates);
@@ -452,7 +457,7 @@ public class TFeeLeg {
              */
 
             subStartDate = stepinDate.isAfter(startDate) ? stepinDate : startDate;
-            t = (double) (startDate.periodUntil(endDate, ChronoUnit.DAYS)) / 365.;
+            t = (double) (startDate.getDaysBetween(endDate)) / 365.;
             accRate = amount / t;
             s0 = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, subStartDate);
             df0 = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, today.isAfter(subStartDate) ? today : subStartDate);
@@ -467,8 +472,8 @@ public class TFeeLeg {
                 s1 = TRateFunctions.cdsForwardZeroPrice(spreadCurve, today, tl.dateArray[i]);
                 df1 = TRateFunctions.cdsForwardZeroPrice(discountCurve, today, tl.dateArray[i]);
 
-                t0 = (startDate.periodUntil(subStartDate, ChronoUnit.DAYS) + 0.5) / 365.;
-                t1 = (startDate.periodUntil(tl.dateArray[i], ChronoUnit.DAYS) + 0.5) / 365.;
+                t0 = (startDate.getDaysBetween(subStartDate) + 0.5) / 365.;
+                t1 = (startDate.getDaysBetween(tl.dateArray[i]) + 0.5) / 365.;
                 t = t1 - t0;
 
 
@@ -561,10 +566,10 @@ public class TFeeLeg {
         }
     }
 
-    public static List<LocalDate> cdsTruncateTimeLine(TDateList criticalDates, LocalDate startDate, LocalDate endDate)
+    public static List<Day> cdsTruncateTimeLine(TDateList criticalDates, Day startDate, Day endDate)
     throws CdsLibraryException {
         try {
-            LocalDate[] startEndDate = new LocalDate[2];
+            Day[] startEndDate = new Day[2];
             startEndDate[0] = startDate;
             startEndDate[1] = endDate;
 
@@ -572,8 +577,8 @@ public class TFeeLeg {
             TDateList tl = cdsDateListAddDates(criticalDates, 2, startEndDate);
             Validate.notNull(tl, "cdsTruncateTimeline failed");
 
-            List<LocalDate> retList = new ArrayList<>();
-            for (LocalDate date : tl.dateArray)
+            List<Day> retList = new ArrayList<>();
+            for (Day date : tl.dateArray)
                 if (!(date.isBefore(startDate) || date.isAfter(endDate)))
                     retList.add(date);
             return retList;
@@ -584,10 +589,10 @@ public class TFeeLeg {
     }
 
 
-    public static TDateList cdsRiskyTimeLine(LocalDate startDate, LocalDate endDate, TCurve discountCurve, TCurve spreadCurve)
+    public static TDateList cdsRiskyTimeLine(Day startDate, Day endDate, TCurve discountCurve, TCurve spreadCurve)
     throws CdsLibraryException{
         TDateList tl = null;
-        LocalDate[] dates = null;
+        Day[] dates = null;
 
         try {
             Validate.isTrue(endDate.isAfter(startDate), "endDate < startDate");
@@ -604,27 +609,27 @@ public class TFeeLeg {
             /**
              * Code for JpmcdsDatesFromCurve
              */
-            dates = new LocalDate[spreadCurve.dates.length];
+            dates = new Day[spreadCurve.dates.length];
             for (int i = 0; i < spreadCurve.dates.length; i++)
                 dates[i] = spreadCurve.dates[i];
 
             tl = cdsDateListAddDatesFreeOld(tl, spreadCurve.dates.length, dates);
-            tl = cdsDateListAddDatesFreeOld(tl, 1, new LocalDate[]{startDate});
-            tl = cdsDateListAddDatesFreeOld(tl, 1, new LocalDate[]{endDate});
+            tl = cdsDateListAddDatesFreeOld(tl, 1, new Day[]{startDate});
+            tl = cdsDateListAddDatesFreeOld(tl, 1, new Day[]{endDate});
 
             /**
              * Remove dates strictly before and after end dates
              */
 
-            List<LocalDate> dateList = Arrays.asList(tl.dateArray);
-            List<LocalDate> truncatedList = new ArrayList<LocalDate>();
+            List<Day> dateList = Arrays.asList(tl.dateArray);
+            List<Day> truncatedList = new ArrayList<Day>();
 
-            for (LocalDate date : dateList) {
+            for (Day date : dateList) {
                 if (!(date.isBefore(startDate) || date.isAfter(endDate)))
                     truncatedList.add(date);
             }
 
-            LocalDate[] truncatedDateList = truncatedList.toArray(new LocalDate[0]);
+            Day[] truncatedDateList = truncatedList.toArray(new Day[0]);
             tl = new TDateList(truncatedDateList.length, truncatedDateList);
 
             return tl;
@@ -635,7 +640,7 @@ public class TFeeLeg {
     }
 
         /*
-    public static double cdsZeroRate(TCurve zeroCurve, LocalDate date) {
+    public static double cdsZeroRate(TCurve zeroCurve, Day date) {
         int exact;
         double rate = 0.0;
 
@@ -671,10 +676,10 @@ public class TFeeLeg {
             }
         } else {
             // date between start and end of zeroDates
-            TreeSet<LocalDate> set = new TreeSet<LocalDate>(Arrays.asList(zeroCurve.dates));
+            TreeSet<Day> set = new TreeSet<Day>(Arrays.asList(zeroCurve.dates));
 
-            LocalDate loDate = set.floor(date);
-            LocalDate hiDate = set.ceiling(date);
+            Day loDate = set.floor(date);
+            Day hiDate = set.ceiling(date);
 
             int lo, high;
             lo = Arrays.binarySearch(zeroCurve.dates, loDate);
@@ -690,16 +695,16 @@ public class TFeeLeg {
 
 
     //TODO - this whole logic needs to be looked at again
-    private TDateList dateListMakeRegular(LocalDate startDate, LocalDate endDate, TDateInterval dateInterval, TStubMethod stubType)
+    private TDateList dateListMakeRegular(Day startDate, Day endDate, TDateInterval dateInterval, TStubMethod stubType)
         throws CdsLibraryException {
 
         try {
             TDateInterval multiInterval;
             int numIntervals = 0;
             int totalDates = 0;
-            LocalDate date;
+            Day date;
             int numTmpDates = 100;
-            LocalDate[] tmpDates = new LocalDate[numTmpDates];
+            Day[] tmpDates = new Day[numTmpDates];
 
             TDateList dl = null;
             int i;
@@ -747,12 +752,12 @@ public class TFeeLeg {
                     tmpDates[i] = startDate;
                 }
 
-                List<LocalDate> datesToAdd = new ArrayList<LocalDate>();
+                List<Day> datesToAdd = new ArrayList<Day>();
                 for (int k = 0; k < numTmpDates - i; k++) {
                     datesToAdd.add(tmpDates[i + k]);
                 }
 
-                dl = cdsDateListAddDatesFreeOld(dl, numTmpDates - i, datesToAdd.toArray(new LocalDate[0]));
+                dl = cdsDateListAddDatesFreeOld(dl, numTmpDates - i, datesToAdd.toArray(new Day[0]));
             } else {
             /* back stub - so we start and startDate and work forwards */
                 numIntervals = 0;
@@ -813,7 +818,7 @@ public class TFeeLeg {
         }
     }
 
-    public static TDateList cdsDateListAddDatesFreeOld(TDateList dl, int numItems, LocalDate[] array) {
+    public static TDateList cdsDateListAddDatesFreeOld(TDateList dl, int numItems, Day[] array) {
         TDateList output = null;
         output = cdsDateListAddDates(dl, numItems, array);
         cdsFreeDateList(dl);
@@ -828,7 +833,7 @@ public class TFeeLeg {
         }
     }
 
-    public static TDateList cdsDateListAddDates(TDateList dl, int numItems, LocalDate[] array) {
+    public static TDateList cdsDateListAddDates(TDateList dl, int numItems, Day[] array) {
         TDateList tmp = new TDateList();
         TDateList result = null;
 
@@ -840,17 +845,17 @@ public class TFeeLeg {
             result = new TDateList();
         else {
             /* TODO - exclude duplicates ??*/
-            Set<LocalDate> dlDates = new HashSet<LocalDate>(dl.dateArray.length);
+            Set<Day> dlDates = new HashSet<Day>(dl.dateArray.length);
             dlDates.addAll(Arrays.asList(dl.dateArray));
 
-            Set<LocalDate> datesToAdd = new HashSet<LocalDate>(array.length);
+            Set<Day> datesToAdd = new HashSet<Day>(array.length);
             datesToAdd.addAll(Arrays.asList(array));
 
-            Set<LocalDate> allDates = new HashSet<LocalDate>();
+            Set<Day> allDates = new HashSet<Day>();
             allDates.addAll(dlDates);
             allDates.addAll(datesToAdd);
 
-            List<LocalDate> list = new ArrayList<>(allDates.size());
+            List<Day> list = new ArrayList<>(allDates.size());
             list.addAll(allDates);
 
             Collections.sort(list);
@@ -911,7 +916,7 @@ public class TFeeLeg {
         return dl.clone();
     }
 
-    public static TDateList cdsNewDateListFromDates(LocalDate[] dates) {
+    public static TDateList cdsNewDateListFromDates(Day[] dates) {
         TDateList dateList = new TDateList(dates);
         return dateList;
 

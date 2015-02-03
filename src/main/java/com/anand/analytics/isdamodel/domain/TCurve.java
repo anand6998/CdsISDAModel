@@ -4,7 +4,7 @@ package com.anand.analytics.isdamodel.domain;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.utils.*;
 import org.apache.log4j.Logger;
-import org.threeten.bp.LocalDate;
+import com.anand.analytics.isdamodel.date.Day;
 
 import java.io.Serializable;
 
@@ -17,18 +17,18 @@ public class TCurve implements Serializable, Cloneable {
 
     final static Logger logger = Logger.getLogger(TCurve.class);
     private static final long serialVersionUID = 7528245660223429470L;
-    LocalDate baseDate;
-    LocalDate[] dates;
+    Day baseDate;
+    Day[] dates;
     double[] rates;
 
     DayCountBasis basis;
     DayCount dayCountConv;
 
-    public LocalDate getBaseDate() {
+    public Day getBaseDate() {
         return baseDate;
     }
 
-    public LocalDate[] getDates() {
+    public Day[] getDates() {
         return dates;
     }
 
@@ -46,7 +46,7 @@ public class TCurve implements Serializable, Cloneable {
 
     private TCurve() {}
 
-    public TCurve(LocalDate baseDate, LocalDate[] dates, double[] rates, DayCountBasis basis, DayCount dayCountConv) throws CdsLibraryException {
+    public TCurve(Day baseDate, Day[] dates, double[] rates, DayCountBasis basis, DayCount dayCountConv) throws CdsLibraryException {
         this.baseDate = baseDate;
         this.dates = dates;
         this.rates = rates;
@@ -74,7 +74,7 @@ public class TCurve implements Serializable, Cloneable {
         }
     }
 
-    private ReturnStatus cdsRateValid(double rate, LocalDate startDate, LocalDate endDate, DayCount rateDayCountConv, DayCountBasis rateBasis) {
+    private ReturnStatus cdsRateValid(double rate, Day startDate, Day endDate, DayCount rateDayCountConv, DayCountBasis rateBasis) {
         ReturnStatus status;
         DoubleHolder yearFraction = new DoubleHolder();
         switch (rateBasis) {
@@ -125,7 +125,7 @@ public class TCurve implements Serializable, Cloneable {
         tCurve.basis = this.basis;
         tCurve.dayCountConv = this.dayCountConv;
 
-        tCurve.dates = new LocalDate[this.dates.length];
+        tCurve.dates = new Day[this.dates.length];
         tCurve.rates = new double[this.rates.length];
 
         for (int i = 0; i < dates.length; i++) {

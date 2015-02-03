@@ -1,9 +1,7 @@
 package com.anand.analytics.isdamodel.date;
 
-import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.domain.TBadDayConvention;
-import org.threeten.bp.DayOfWeek;
-import org.threeten.bp.LocalDate;
+import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 
 import java.util.List;
 
@@ -15,8 +13,8 @@ import static com.anand.analytics.isdamodel.utils.CdsFunctions.SIGN;
  */
 public class HolidayCalendarFunctions {
 
-    public LocalDate getNextBusinessDay(LocalDate input, int sign, List<DayOfWeek> weekendDays, List<LocalDate> holidays) {
-        LocalDate adjustedDate = input;
+    public Day getNextBusinessDay(Day input, int sign, List<DayOfWeek> weekendDays, List<Day> holidays) {
+        Day adjustedDate = input;
         DayOfWeek dayOfWeek = adjustedDate.getDayOfWeek();
 
         while (weekendDays.contains(dayOfWeek)|| holidays.contains(adjustedDate)) {
@@ -27,31 +25,31 @@ public class HolidayCalendarFunctions {
         return adjustedDate;
     }
 
-    public boolean isBusinessDay(LocalDate input, List<DayOfWeek> weekendDays, List<LocalDate> holidays) {
+    public boolean isBusinessDay(Day input, List<DayOfWeek> weekendDays, List<Day> holidays) {
         DayOfWeek dayOfWeek = input.getDayOfWeek();
         if (weekendDays.contains(dayOfWeek) || holidays.contains(input))
             return false;
         return true;
     }
 
-    public LocalDate addBusinessDay(LocalDate input, long sign, List<DayOfWeek> weekendDays, List<LocalDate> holidays) {
-        LocalDate tmp = input.plusDays(sign);
+    public Day addBusinessDay(Day input, long sign, List<DayOfWeek> weekendDays, List<Day> holidays) {
+        Day tmp = input.plusDays((int)sign);
         while(!isBusinessDay(tmp, weekendDays, holidays)) {
-            tmp = tmp.plusDays(sign);
+            tmp = tmp.plusDays((int)sign);
         }
         return tmp;
     }
 
-    public LocalDate addBusinessDays(LocalDate input, long numBusDays, List<DayOfWeek> weekendDays, List<LocalDate> holidays) {
+    public Day addBusinessDays(Day input, long numBusDays, List<DayOfWeek> weekendDays, List<Day> holidays) {
         long intervalSign = SIGN(numBusDays);
         long numBusDaysLeft = ABS(numBusDays);
 
         if (weekendDays.size() == 0 && holidays.size() == 0) {
             //No adjustments at all
-            LocalDate result = input.plusDays(intervalSign * numBusDaysLeft);
+            Day result = input.plusDays((int)(intervalSign * numBusDaysLeft));
             return result;
         } else {
-            LocalDate tmp = input;
+            Day tmp = input;
             for (int i = 0; i < numBusDays; i++) {
                 tmp = addBusinessDay(tmp, intervalSign, weekendDays, holidays);
             }
@@ -60,9 +58,9 @@ public class HolidayCalendarFunctions {
         }
     }
 
-    public LocalDate getNextBusinessDay(LocalDate input, TBadDayConvention badDayConvention, List<DayOfWeek> weekendDays, List<LocalDate> holidays)
+    public Day getNextBusinessDay(Day input, TBadDayConvention badDayConvention, List<DayOfWeek> weekendDays, List<Day> holidays)
             throws CdsLibraryException {
-        LocalDate retDate = input;
+        Day retDate = input;
         int intervalSign = 1;
         switch(badDayConvention) {
             case NONE:

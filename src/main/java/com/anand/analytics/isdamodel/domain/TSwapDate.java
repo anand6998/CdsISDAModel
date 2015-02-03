@@ -1,38 +1,38 @@
 package com.anand.analytics.isdamodel.domain;
 
 
-import org.threeten.bp.LocalDate;
+import com.anand.analytics.isdamodel.date.Day;
 
 /**
  * Created by anand on 12/30/14.
  */
 public class TSwapDate {
-    LocalDate adjustedDate;
-    LocalDate  originalDate;
-    LocalDate previousDate;
+    Day adjustedDate;
+    Day  originalDate;
+    Day previousDate;
     boolean onCycle;
 
-    public LocalDate getAdjustedDate() {
+    public Day getAdjustedDate() {
         return adjustedDate;
     }
 
-    public void setAdjustedDate(LocalDate adjustedDate) {
+    public void setAdjustedDate(Day adjustedDate) {
         this.adjustedDate = adjustedDate;
     }
 
-    public LocalDate getOriginalDate() {
+    public Day getOriginalDate() {
         return originalDate;
     }
 
-    public void setOriginalDate(LocalDate originalDate) {
+    public void setOriginalDate(Day originalDate) {
         this.originalDate = originalDate;
     }
 
-    public LocalDate getPreviousDate() {
+    public Day getPreviousDate() {
         return previousDate;
     }
 
-    public void setPreviousDate(LocalDate previousDate) {
+    public void setPreviousDate(Day previousDate) {
         this.previousDate = previousDate;
     }
 

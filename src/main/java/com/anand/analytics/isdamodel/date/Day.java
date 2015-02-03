@@ -24,6 +24,11 @@ public class Day implements Serializable, Comparable<Day>, Cloneable {
 
     public int jdn; //Julian Day Number
 
+    int monthDays[] =
+            { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    int leapMonthDays[] =
+            {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
     public boolean isLeapYear() {
         boolean retValue = false;
         if (year % 4 == 0)
@@ -184,9 +189,18 @@ public class Day implements Serializable, Comparable<Day>, Cloneable {
         return new Day(jdn + numberOfDays);
     }
 
-    public Day minusDays(int numberOfDays) {
+    public Day plusDays(int numberOfDays) { return new Day (jdn + numberOfDays); }
 
+    public Day minusDays(int numberOfDays) {
         return new Day(jdn - numberOfDays);
+    }
+
+    public int getMonthValue() {
+        return month;
+    }
+
+    public int getDayOfMonth() {
+        return day;
     }
 
     public Day startDate() {
@@ -244,6 +258,10 @@ public class Day implements Serializable, Comparable<Day>, Cloneable {
         return jdn == otherDay.jdn;
     }
 
+    public boolean isAfter(Day otherDay) { return jdn > otherDay.jdn; }
+
+    public boolean isBefore(Day otherDay) { return jdn < otherDay.jdn; }
+
     public Day addMonths(int numMonths) {
 
         if (numMonths == 0) {
@@ -284,5 +302,15 @@ public class Day implements Serializable, Comparable<Day>, Cloneable {
         month = j.get();
         day = k.get();
 
+    }
+
+    public boolean isEqual(Day otherDay) {
+        return this.jdn == otherDay.jdn;
+    }
+
+    public int lengthOfMonth() {
+        if (this.isLeapYear())
+            return leapMonthDays[month - 1];
+        return monthDays[month - 1];
     }
 }

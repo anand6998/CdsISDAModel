@@ -1,6 +1,6 @@
 package com.anand.analytics.isdamodel.domain;
 
-import org.threeten.bp.LocalDate;
+import com.anand.analytics.isdamodel.date.Day;
 
 import java.util.List;
 
@@ -9,11 +9,11 @@ import java.util.List;
  */
 public class TDateList implements Cloneable {
     int fNumItems;
-    LocalDate[] dateArray;
+    Day[] dateArray;
 
     public TDateList(int numItems) {
         this.fNumItems = numItems;
-        this.dateArray = new LocalDate[fNumItems];
+        this.dateArray = new Day[fNumItems];
     }
 
     public TDateList() {
@@ -21,9 +21,9 @@ public class TDateList implements Cloneable {
         this.dateArray = null;
     }
 
-    public TDateList(int numItems, LocalDate[] array) {
+    public TDateList(int numItems, Day[] array) {
         this.fNumItems = numItems;
-        dateArray = new LocalDate[fNumItems];
+        dateArray = new Day[fNumItems];
         for (int i = 0; i < numItems; i++) {
             this.dateArray[i] = array[i];
         }
@@ -31,16 +31,16 @@ public class TDateList implements Cloneable {
 
     public TDateList(TCurve curve) {
         this.fNumItems = curve.dates.length;
-        dateArray = new LocalDate[fNumItems];
+        dateArray = new Day[fNumItems];
         for (int i = 0; i < fNumItems; i++)
             this.dateArray[i] = curve.dates[i];
     }
 
-    public TDateList(List<LocalDate> list) {
+    public TDateList(List<Day> list) {
         this.fNumItems = list.size();
-        dateArray = new LocalDate[fNumItems];
+        dateArray = new Day[fNumItems];
         int i = 0;
-        for (LocalDate date : list)
+        for (Day date : list)
             dateArray[i++] = date;
     }
 
@@ -53,7 +53,7 @@ public class TDateList implements Cloneable {
         return list;
     }
 
-    public TDateList(LocalDate[] array) {
+    public TDateList(Day[] array) {
         this.dateArray = array;
         this.fNumItems = array.length;
     }

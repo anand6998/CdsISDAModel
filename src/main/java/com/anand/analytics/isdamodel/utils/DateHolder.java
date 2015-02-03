@@ -1,21 +1,21 @@
 package com.anand.analytics.isdamodel.utils;
 
-import org.threeten.bp.LocalDate;
+import com.anand.analytics.isdamodel.date.Day;
 
 /**
  * Created by Anand on 10/27/2014.
  */
 public class DateHolder {
-    private LocalDate date;
+    private Day date;
 
     public DateHolder() {
     }
 
-    public void set(LocalDate date) {
+    public void set(Day date) {
         this.date = date;
     }
 
-    public LocalDate get() {
+    public Day get() {
         return date;
     }
 }
