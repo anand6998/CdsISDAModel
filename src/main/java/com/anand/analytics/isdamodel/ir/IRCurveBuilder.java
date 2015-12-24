@@ -610,7 +610,7 @@ public class IRCurveBuilder {
      * Makes a date list for all coupons associated w/ a swap instrument
      *
      * Only glitch is possible inclusion of a stub date, which is necessary if the
-     * maturity date isnt an integral number of frequency intervales away, e.g. a
+     * maturity date isnt an integral number of frequency intervals away, e.g. a
      * swap date 5 years and 1 month from the value date, which would have a stub
      * date 1 month from now, followed by coupons every year from then
      *
@@ -695,8 +695,6 @@ public class IRCurveBuilder {
         IntHolder extraDays = new IntHolder();
         if (stubAtEnd) {
             /** Count forward from the start date*/
-
-
             if (CdsFunctions.cdsCountDates(startDate, maturityDate, interval, numIntervals, extraDays).equals(ReturnStatus.FAILURE)) {
                 throw new CdsLibraryException("Error in cdsCountDates");
             }
@@ -711,7 +709,6 @@ public class IRCurveBuilder {
         }
 
         int numDates;
-
         if (extraDays.get() > 0)
             numDates = numIntervals.get() + 2;
         else
