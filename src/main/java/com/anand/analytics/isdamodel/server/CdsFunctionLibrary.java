@@ -1,15 +1,32 @@
 package com.anand.analytics.isdamodel.server;
 
 
-import com.anand.analytics.isdamodel.cds.*;
+import com.anand.analytics.isdamodel.cds.CdsBootstrap;
+import com.anand.analytics.isdamodel.cds.CdsOne;
 import com.anand.analytics.isdamodel.context.CdsCacheManager;
 import com.anand.analytics.isdamodel.context.XlServerSpringUtils;
+import com.anand.analytics.isdamodel.date.Day;
 import com.anand.analytics.isdamodel.date.HolidayCalendar;
 import com.anand.analytics.isdamodel.date.HolidayCalendarFactory;
-import com.anand.analytics.isdamodel.domain.*;
+import com.anand.analytics.isdamodel.domain.CdsDateAdjType;
+import com.anand.analytics.isdamodel.domain.TBadDayConvention;
+import com.anand.analytics.isdamodel.domain.TCurve;
+import com.anand.analytics.isdamodel.domain.TDateAdjIntvl;
+import com.anand.analytics.isdamodel.domain.TDateFunctions;
+import com.anand.analytics.isdamodel.domain.TDateInterval;
+import com.anand.analytics.isdamodel.domain.TFeeLeg;
+import com.anand.analytics.isdamodel.domain.TFeeLegCashFlow;
+import com.anand.analytics.isdamodel.domain.TRateFunctions;
+import com.anand.analytics.isdamodel.domain.TStubMethod;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.ir.IRCurveBuilder;
-import com.anand.analytics.isdamodel.utils.*;
+import com.anand.analytics.isdamodel.utils.CdsFunctions;
+import com.anand.analytics.isdamodel.utils.DayCount;
+import com.anand.analytics.isdamodel.utils.DayCountBasis;
+import com.anand.analytics.isdamodel.utils.DoubleHolder;
+import com.anand.analytics.isdamodel.utils.ExcelFunctions;
+import com.anand.analytics.isdamodel.utils.PeriodType;
+import com.anand.analytics.isdamodel.utils.ReturnStatus;
 import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 import org.boris.xlloop.reflect.XLFunction;
@@ -17,8 +34,6 @@ import org.boris.xlloop.xloper.XLArray;
 import org.boris.xlloop.xloper.XLNum;
 import org.boris.xlloop.xloper.XLString;
 import org.boris.xlloop.xloper.XLoper;
-import org.threeten.bp.LocalDate;
-import org.threeten.bp.temporal.ChronoUnit;
 
 import java.util.UUID;
 
@@ -61,8 +76,8 @@ public class CdsFunctionLibrary {
             for (int i = 0; i < xlDates.length; i++)
                 Validate.isTrue(!(Double.compare(xlDates[i], 0) == 0.0));
 
-            final LocalDate baseDate = ExcelFunctions.xlDateToLocalDateTime(xlBaseDate);
-            final LocalDate[] dates = ExcelFunctions.xlDatesToLocalDateTimeArray(xlDates);
+            final Day baseDate = ExcelFunctions.xlDateToLocalDateTime(xlBaseDate);
+            final Day[] dates = ExcelFunctions.xlDatesToLocalDateTimeArray(xlDates);
             final DayCountBasis dayCountBasis = ExcelFunctions.xlIntToDayCountBasis(xlBasis);
 
             final DayCount dayCount = dcc == null ? DayCount.ACT_360 : ExcelFunctions.cdsStringToDayCountConv(dcc);
@@ -157,12 +172,12 @@ public class CdsFunctionLibrary {
             Validate.isTrue(!(Double.compare(xldStartDate, 0) == 0.0), "Invalid startDate");
             Validate.isTrue(!(Double.compare(xldEndDate, 0) == 0.0), "Invalid endDate");
 
-            final LocalDate today = ExcelFunctions.xlDateToLocalDateTime(xldToday);
-            final LocalDate valueDate = ExcelFunctions.xlDateToLocalDateTime(xldValueDate);
-            final LocalDate benchmarkStartDate = ExcelFunctions.xlDateToLocalDateTime(xldBenchmarktStartDate);
-            final LocalDate stepinDate = ExcelFunctions.xlDateToLocalDateTime(xldstepinDate);
-            final LocalDate startDate = ExcelFunctions.xlDateToLocalDateTime(xldStartDate);
-            final LocalDate endDate = ExcelFunctions.xlDateToLocalDateTime(xldEndDate);
+            final Day today = ExcelFunctions.xlDateToLocalDateTime(xldToday);
+            final Day valueDate = ExcelFunctions.xlDateToLocalDateTime(xldValueDate);
+            final Day benchmarkStartDate = ExcelFunctions.xlDateToLocalDateTime(xldBenchmarktStartDate);
+            final Day stepinDate = ExcelFunctions.xlDateToLocalDateTime(xldstepinDate);
+            final Day startDate = ExcelFunctions.xlDateToLocalDateTime(xldStartDate);
+            final Day endDate = ExcelFunctions.xlDateToLocalDateTime(xldEndDate);
             final double couponRate = xldCouponRate;
             final boolean payAccruedOnDefault = xliPayAccruedOnDefault == 1 ? true : false;
             final TDateInterval ivl = ExcelFunctions.cdsStringToDateInterval(xlsCouponInterval);
@@ -296,12 +311,12 @@ public class CdsFunctionLibrary {
             Validate.isTrue(!(Double.compare(xldStartDate, 0) == 0.0), "Invalid startDate");
             Validate.isTrue(!(Double.compare(xldEndDate, 0) == 0.0), "Invalid endDate");
 
-            final LocalDate today = ExcelFunctions.xlDateToLocalDateTime(xldToday);
-            final LocalDate valueDate = ExcelFunctions.xlDateToLocalDateTime(xldValueDate);
-            final LocalDate benchmarkStartDate = ExcelFunctions.xlDateToLocalDateTime(xldBenchmarktStartDate);
-            final LocalDate stepinDate = ExcelFunctions.xlDateToLocalDateTime(xldstepinDate);
-            final LocalDate startDate = ExcelFunctions.xlDateToLocalDateTime(xldStartDate);
-            final LocalDate endDate = ExcelFunctions.xlDateToLocalDateTime(xldEndDate);
+            final Day today = ExcelFunctions.xlDateToLocalDateTime(xldToday);
+            final Day valueDate = ExcelFunctions.xlDateToLocalDateTime(xldValueDate);
+            final Day benchmarkStartDate = ExcelFunctions.xlDateToLocalDateTime(xldBenchmarktStartDate);
+            final Day stepinDate = ExcelFunctions.xlDateToLocalDateTime(xldstepinDate);
+            final Day startDate = ExcelFunctions.xlDateToLocalDateTime(xldStartDate);
+            final Day endDate = ExcelFunctions.xlDateToLocalDateTime(xldEndDate);
 
             final double couponRate = xldCouponRate;
             final boolean payAccruedOnDefault = xliPayAccruedOnDefault == 1 ? true : false;
@@ -402,7 +417,7 @@ public class CdsFunctionLibrary {
             Validate.isTrue(!(Double.compare(xldNotional, 0) == 0.0), "Invalid Notional");
 
 
-            final LocalDate startDate = ExcelFunctions.xlDateToLocalDateTime(xldStartDate);
+            final Day startDate = ExcelFunctions.xlDateToLocalDateTime(xldStartDate);
             final TBadDayConvention badDayConvention = xlsBadDayConvention == null
                     ? ExcelFunctions.DEFAULT_BAD_DAY_CONVENTION
                     : ExcelFunctions.cdsStringToBadDayConv(xlsBadDayConvention);
@@ -422,7 +437,7 @@ public class CdsFunctionLibrary {
                     ? ExcelFunctions.DEFAULT_DAY_COUNT
                     : ExcelFunctions.cdsStringToDayCountConv(xlsPaymentDcc);
 
-            final LocalDate endDate = ExcelFunctions.xlDateToLocalDateTime(xldEndDate);
+            final Day endDate = ExcelFunctions.xlDateToLocalDateTime(xldEndDate);
 
             boolean payAccruedOnDefault = true;
             boolean protectStart = true;
@@ -441,9 +456,9 @@ public class CdsFunctionLibrary {
                     protectStart
             );
 
-            LocalDate[] accStartDates = feeLeg.getAccStartDates();
-            LocalDate[] accEndDates = feeLeg.getAccEndDates();
-            LocalDate[] paymentDates = feeLeg.getPayDates();
+            Day[] accStartDates = feeLeg.getAccStartDates();
+            Day[] accEndDates = feeLeg.getAccEndDates();
+            Day[] paymentDates = feeLeg.getPayDates();
 
             DayCount feeLegDcc = feeLeg.getDcc();
             double feeLegCouponRate = feeLeg.getCouponRate();
@@ -548,11 +563,11 @@ public class CdsFunctionLibrary {
             Validate.notNull(xliPayAccruedOnDefault, "Invalid accrued on default flag");
 
 
-            final LocalDate today = ExcelFunctions.xlDateToLocalDateTime(xldToday);
-            final LocalDate startDate = ExcelFunctions.xlDateToLocalDateTime(xldStartDate);
-            final LocalDate stepinDate = ExcelFunctions.xlDateToLocalDateTime(xldstepinDate);
-            final LocalDate cashSettleDate = ExcelFunctions.xlDateToLocalDateTime(xldCashSettleDate);
-            final LocalDate[] endDates = ExcelFunctions.xlDatesToLocalDateTimeArray(xldaEndDates);
+            final Day today = ExcelFunctions.xlDateToLocalDateTime(xldToday);
+            final Day startDate = ExcelFunctions.xlDateToLocalDateTime(xldStartDate);
+            final Day stepinDate = ExcelFunctions.xlDateToLocalDateTime(xldstepinDate);
+            final Day cashSettleDate = ExcelFunctions.xlDateToLocalDateTime(xldCashSettleDate);
+            final Day[] endDates = ExcelFunctions.xlDatesToLocalDateTimeArray(xldaEndDates);
             final double[] rates = xldaRates;
             final Boolean[] includes = ExcelFunctions.xlDoublesToBooleanArray(xliaIncludeFlags);
             final boolean payAccruedOnDefault = xliPayAccruedOnDefault == 1 ? true : false;
@@ -619,7 +634,7 @@ public class CdsFunctionLibrary {
 
             final TCurve curve = cdsCacheManager.get(xlhCurveKey);
 
-            final LocalDate date = ExcelFunctions.xlDateToLocalDateTime(xldDate);
+            final Day date = ExcelFunctions.xlDateToLocalDateTime(xldDate);
             final double result = TRateFunctions.cdsZeroPrice(curve, date);
 
             return new XLNum(result);
@@ -688,10 +703,10 @@ public class CdsFunctionLibrary {
             Validate.isTrue(!(Double.compare(xldStepinDate, 0) == 0.0), "Invalid Stepin date");
             Validate.isTrue(!(Double.compare(xldStartDate, 0) == 0.0), "Invalid Start date");
 
-            final LocalDate today = ExcelFunctions.xlDateToLocalDateTime(xldToday);
-            final LocalDate stepinDate = ExcelFunctions.xlDateToLocalDateTime(xldStepinDate);
-            final LocalDate startDate = ExcelFunctions.xlDateToLocalDateTime(xldStartDate);
-            final LocalDate[] endDates = new LocalDate[xldEndDates.length];
+            final Day today = ExcelFunctions.xlDateToLocalDateTime(xldToday);
+            final Day stepinDate = ExcelFunctions.xlDateToLocalDateTime(xldStepinDate);
+            final Day startDate = ExcelFunctions.xlDateToLocalDateTime(xldStartDate);
+            final Day[] endDates = new Day[xldEndDates.length];
 
 
             for (int i = 0; i < xldEndDates.length; i++)
@@ -826,12 +841,12 @@ public class CdsFunctionLibrary {
             Validate.isTrue(!(Double.compare(xldEndDate, 0) == 0.0), "Invalid endDate");
 
 
-            final LocalDate today = ExcelFunctions.xlDateToLocalDateTime(xldToday);
-            final LocalDate valueDate = ExcelFunctions.xlDateToLocalDateTime(xldValueDate);
+            final Day today = ExcelFunctions.xlDateToLocalDateTime(xldToday);
+            final Day valueDate = ExcelFunctions.xlDateToLocalDateTime(xldValueDate);
 
-            final LocalDate stepinDate = ExcelFunctions.xlDateToLocalDateTime(xldstepinDate);
-            final LocalDate startDate = ExcelFunctions.xlDateToLocalDateTime(xldStartDate);
-            final LocalDate endDate = ExcelFunctions.xlDateToLocalDateTime(xldEndDate);
+            final Day stepinDate = ExcelFunctions.xlDateToLocalDateTime(xldstepinDate);
+            final Day startDate = ExcelFunctions.xlDateToLocalDateTime(xldStartDate);
+            final Day endDate = ExcelFunctions.xlDateToLocalDateTime(xldEndDate);
             final double couponRate = xldCouponRate;
             final boolean payAccruedOnDefault = xliPayAccruedOnDefault == 1 ? true : false;
             final TDateInterval ivl = ExcelFunctions.cdsStringToDateInterval(xlsCouponInterval);
@@ -892,7 +907,7 @@ public class CdsFunctionLibrary {
     public static XLoper cdsDatesAndRates(String xlhCurveHandle) {
         try {
             TCurve tCurve = cdsCacheManager.get(xlhCurveHandle);
-            LocalDate[] dates = tCurve.getDates();
+            Day[] dates = tCurve.getDates();
             double[] rates = tCurve.getRates();
 
             XLArray xlArray = new XLArray(dates.length, 2);
@@ -971,13 +986,13 @@ public class CdsFunctionLibrary {
             Validate.isTrue(xlsaEndDates.length == xldaRates.length, "Rates and Dates arrays must be of equal length");
             Validate.isTrue(xlstraTypes.length == xldaRates.length, "Types and rates arrays must be of equal length");
 
-            final LocalDate valueDate = ExcelFunctions.xlDateToLocalDateTime(xldValueDate);
+            final Day valueDate = ExcelFunctions.xlDateToLocalDateTime(xldValueDate);
             final char[] types = new char[xlstraTypes.length];
             for (int i = 0; i < xlstraTypes.length; i++)
                 types[i] = xlstraTypes[i].charAt(0);
 
 
-            final LocalDate[] endDates = new LocalDate[xlsaEndDates.length];
+            final Day[] endDates = new Day[xlsaEndDates.length];
             HolidayCalendarFactory holidayCalendarFactory = (HolidayCalendarFactory ) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
             HolidayCalendar noneHolidayCalendar = holidayCalendarFactory.getCalendar("None");
 
@@ -986,8 +1001,8 @@ public class CdsFunctionLibrary {
                 /**
                  * Advance the date
                  */
-                LocalDate adjDate = TDateFunctions.dtFwdAny(valueDate, dateInterval);
-                LocalDate busnDate = noneHolidayCalendar.getNextBusinessDay(adjDate, TBadDayConvention.NONE);
+                Day adjDate = TDateFunctions.dtFwdAny(valueDate, dateInterval);
+                Day busnDate = noneHolidayCalendar.getNextBusinessDay(adjDate, TBadDayConvention.NONE);
                 endDates[i] = busnDate;
             }
 
@@ -1020,16 +1035,16 @@ public class CdsFunctionLibrary {
             //HolidayCalendarFactory holidayCalendarFactory = (HolidayCalendarFactory) XlServerSpringUtils.getBeanByName("holidayCalendarFactory");
             HolidayCalendar holidayCalendar = holidayCalendarFactory.getCalendar(calendar);
 
-            final LocalDate baseDate = valueDate;
+            final Day baseDate = valueDate;
             for (int i = 0; i < types.length; i++) {
                 if(types[i] == 'M') {
 
-                    if (baseDate.periodUntil(endDates[i], ChronoUnit.DAYS) <=3 ) {
+                    if (baseDate.getDaysBetween(endDates[i]) <=3 ) {
                         /**
                          * Untested logic - the example code never goes into this if condition
                          */
                         final TDateInterval tDateInterval = new TDateInterval(
-                                baseDate.periodUntil(endDates[i], ChronoUnit.DAYS),
+                                baseDate.getDaysBetween(endDates[i]),
                                 PeriodType.D,
                                 0
                         );
@@ -1047,7 +1062,7 @@ public class CdsFunctionLibrary {
                         //TODO - to be implemented
                     }
 
-                    if (baseDate.periodUntil(endDates[i], ChronoUnit.DAYS) <= 21) {
+                    if (baseDate.getDaysBetween(endDates[i]) <= 21) {
                         /**
                          * for less than or equal to 3 weeks
                          * adjust to business day

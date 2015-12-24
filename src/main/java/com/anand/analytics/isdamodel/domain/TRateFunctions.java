@@ -1,13 +1,17 @@
 package com.anand.analytics.isdamodel.domain;
 
+import com.anand.analytics.isdamodel.date.Day;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.ir.ZeroCurve;
-import com.anand.analytics.isdamodel.utils.*;
+import com.anand.analytics.isdamodel.utils.CdsFunctions;
+import com.anand.analytics.isdamodel.utils.CdsUtils;
+import com.anand.analytics.isdamodel.utils.DayCount;
+import com.anand.analytics.isdamodel.utils.DayCountBasis;
+import com.anand.analytics.isdamodel.utils.DoubleHolder;
+import com.anand.analytics.isdamodel.utils.IntHolder;
+import com.anand.analytics.isdamodel.utils.ReturnStatus;
 import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
-import org.threeten.bp.LocalDate;
-import org.threeten.bp.chrono.ChronoLocalDate;
-import org.threeten.bp.temporal.ChronoUnit;
 
 import static com.anand.analytics.isdamodel.utils.CdsFunctions.ARE_ALMOST_EQUAL;
 import static com.anand.analytics.isdamodel.utils.CdsFunctions.IS_ALMOST_ZERO;
@@ -19,7 +23,7 @@ import static com.anand.analytics.isdamodel.utils.CdsFunctions.IS_ALMOST_ZERO;
 public class TRateFunctions {
     private static Logger logger = Logger.getLogger(TRateFunctions.class);
 
-    public static double cdsForwardZeroPrice(TCurve zeroCurve, LocalDate startDate, LocalDate maturityDate) throws CdsLibraryException {
+    public static double cdsForwardZeroPrice(TCurve zeroCurve, Day startDate, Day maturityDate) throws CdsLibraryException {
         double startPrice = cdsZeroPrice(zeroCurve, startDate);
         double maturityPrice = cdsZeroPrice(zeroCurve, maturityDate);
         return maturityPrice / startPrice;
@@ -76,17 +80,17 @@ public class TRateFunctions {
         return ReturnStatus.SUCCESS;
     }
 
-    public static double cdsZeroPrice(TCurve zeroCurve, LocalDate date) throws CdsLibraryException {
+    public static double cdsZeroPrice(TCurve zeroCurve, Day date) throws CdsLibraryException {
         double zeroPrice = 0;
         double rate, time;
 
         rate = cdsZeroRate(zeroCurve, date);
-        time = (zeroCurve.getBaseDate().periodUntil(date, ChronoUnit.DAYS)) / 365.;
+        time = (zeroCurve.getBaseDate().getDaysBetween(date)) / 365.;
         zeroPrice = Math.exp(-rate * time);
         return zeroPrice;
     }
 
-    public static double cdsZeroRate(TCurve zeroCurve, LocalDate date) throws CdsLibraryException {
+    public static double cdsZeroRate(TCurve zeroCurve, Day date) throws CdsLibraryException {
         try {
             ReturnStatus status = ReturnStatus.FAILURE;
 
@@ -150,7 +154,7 @@ public class TRateFunctions {
         }
     }
 
-    public static ReturnStatus zcInterpRate(TCurve zeroCurve, LocalDate date, int lo, int hi, DoubleHolder rate) {
+    public static ReturnStatus zcInterpRate(TCurve zeroCurve, Day date, int lo, int hi, DoubleHolder rate) {
         try {
             long t1;
             long t2;
@@ -161,10 +165,10 @@ public class TRateFunctions {
             DoubleHolder z2 = new DoubleHolder();
 
 
-            t1 = zeroCurve.baseDate.periodUntil(zeroCurve.dates[lo], ChronoUnit.DAYS);
-            t2 = zeroCurve.baseDate.periodUntil(zeroCurve.dates[hi], ChronoUnit.DAYS);
+            t1 = zeroCurve.baseDate.getDaysBetween(zeroCurve.dates[lo]);
+            t2 = zeroCurve.baseDate.getDaysBetween(zeroCurve.dates[hi]);
 
-            t = zeroCurve.baseDate.periodUntil(date, ChronoUnit.DAYS);
+            t = zeroCurve.baseDate.getDaysBetween(date);
 
             Validate.isTrue(t > t1, "t <= t1");
             Validate.isTrue(t2 > t1, " t2 <= t1");
@@ -270,13 +274,13 @@ public class TRateFunctions {
     }
 
     public static ReturnStatus zcComputeDiscount(ZeroCurve zc,
-                                                 LocalDate date,
+                                                 Day date,
                                                  double rate, DoubleHolder discountOut) {
         if (zc.getDayCountBasis().equals(DayCountBasis.ANNUAL_BASIS) &&
                 rate >= -1.0 &&
                 (date.isEqual(zc.getValueDate()) || date.isAfter(zc.getValueDate())) &&
                 (zc.getDayCount().equals(DayCount.ACT_365F) || zc.getDayCount().equals(DayCount.ACT_360))) {
-            double discount = Math.pow(1 + rate, (date.periodUntil(zc.getValueDate(), ChronoUnit.DAYS) / (zc.getDayCount().equals(DayCount.ACT_360) ? 360. : 365.)));
+            double discount = Math.pow(1 + rate, (date.getDaysBetween(zc.getValueDate()) / (zc.getDayCount().equals(DayCount.ACT_360) ? 360. : 365.)));
             discountOut.set(discount);
             return ReturnStatus.SUCCESS;
         }
@@ -299,7 +303,7 @@ public class TRateFunctions {
 
     }
 
-    private static ReturnStatus cdsRateToDiscount(double rate, LocalDate startDate, LocalDate endDate,
+    private static ReturnStatus cdsRateToDiscount(double rate, Day startDate, Day endDate,
                                                   DayCount rateDayCountConv, DayCountBasis rateBasis, DoubleHolder discOut) {
 
 
@@ -334,7 +338,7 @@ public class TRateFunctions {
         return ReturnStatus.SUCCESS;
     }
 
-    public static ReturnStatus cdsDiscountToRate(double discount, LocalDate startDate, LocalDate endDate,
+    public static ReturnStatus cdsDiscountToRate(double discount, Day startDate, Day endDate,
                                                  DayCount rateDayCountConv, DayCountBasis rateBasis, DoubleHolder rate)
             {
         if (discount <= 0.0) {
@@ -402,7 +406,7 @@ public class TRateFunctions {
      */
     public static ReturnStatus zcInterpolate (
             ZeroCurve zc,
-            LocalDate date,
+            Day date,
             TInterpType interpTypeIn,
             TInterpData interpDataIn,
             DoubleHolder rateOut
@@ -437,7 +441,7 @@ public class TRateFunctions {
          */
         IntHolder loIdx = new IntHolder();
         IntHolder hiIdx = new IntHolder();
-        ChronoLocalDate xDesired = date;
+        Day xDesired = date;
 
         if (CdsFunctions.cdsBinarySearchLongFast(xDesired,
                 zc.getDates(),
@@ -469,8 +473,8 @@ public class TRateFunctions {
         //This should use the daycount convention to get days between
         switch(interpType) {
             case LINEAR_INTERP: {
-                long hi_lo = zc.getDates()[lo].periodUntil(zc.getDates()[hi], ChronoUnit.DAYS);
-                long dt_lo = zc.getDates()[lo].periodUntil(date, ChronoUnit.DAYS);
+                long hi_lo = zc.getDates()[lo].getDaysBetween(zc.getDates()[hi]);
+                long dt_lo = zc.getDates()[lo].getDaysBetween(date);
 
                 rate = zc.getRates()[lo];
                 if (hi_lo != 0) {
@@ -481,8 +485,8 @@ public class TRateFunctions {
 
             case FLAT_FORWARDS: {
 
-                long hi_lo = zc.getDates()[lo].periodUntil(zc.getDates()[hi], ChronoUnit.DAYS);
-                long dt_lo = zc.getDates()[lo].periodUntil(date, ChronoUnit.DAYS);
+                long hi_lo = zc.getDates()[lo].getDaysBetween(zc.getDates()[hi]);
+                long dt_lo = zc.getDates()[lo].getDaysBetween(date);
 
                 if (hi_lo == 0) {
                     rate = zc.getRates()[lo];

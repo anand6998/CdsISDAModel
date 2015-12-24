@@ -7,12 +7,12 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.spri
     <bean id="holidayListReader" class="com.anand.analytics.isdamodel.date.HolidayListReader"></bean>
     <bean id="holidayCalendarFunctions" class="com.anand.analytics.isdamodel.date.HolidayCalendarFunctions"/>
 
-    <util:constant id="monday" static-field="org.threeten.bp.DayOfWeek.MONDAY"/>
-    <util:constant id="tuesday" static-field="org.threeten.bp.DayOfWeek.TUESDAY"/>
-    <util:constant id="wednesday" static-field="org.threeten.bp.DayOfWeek.WEDNESDAY"/>
-    <util:constant id="thursday" static-field="org.threeten.bp.DayOfWeek.THURSDAY"/>
-    <util:constant id="friday" static-field="org.threeten.bp.DayOfWeek.FRIDAY"/>
-    <util:constant id="saturday" static-field="org.threeten.bp.DayOfWeek.SATURDAY"/>
-    <util:constant id="sunday" static-field="org.threeten.bp.DayOfWeek.SUNDAY"/>
+    <util:constant id="monday" static-field="com.anand.analytics.isdamodel.date.DayOfWeek.MON"/>
+    <util:constant id="tuesday" static-field="com.anand.analytics.isdamodel.date.DayOfWeek.TUE"/>
+    <util:constant id="wednesday" static-field="com.anand.analytics.isdamodel.date.DayOfWeek.WED"/>
+    <util:constant id="thursday" static-field="com.anand.analytics.isdamodel.date.DayOfWeek.THU"/>
+    <util:constant id="friday" static-field="com.anand.analytics.isdamodel.date.DayOfWeek.FRI"/>
+    <util:constant id="saturday" static-field="com.anand.analytics.isdamodel.date.DayOfWeek.SAT"/>
+    <util:constant id="sunday" static-field="com.anand.analytics.isdamodel.date.DayOfWeek.SUN"/>
 
     </beans>

@@ -1,10 +1,8 @@
 package com.anand.analytics.isdamodel.date;
 
-import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.domain.TBadDayConvention;
+import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import com.anand.analytics.isdamodel.money.Currency;
-import org.threeten.bp.DayOfWeek;
-import org.threeten.bp.LocalDate;
 
 import java.util.List;
 
@@ -13,7 +11,7 @@ import java.util.List;
  */
 public class DefaultHolidayCalendar implements HolidayCalendar {
 
-    protected final List<LocalDate> holidays;
+    protected final List<Day> holidays;
     protected final List<DayOfWeek> weekendDays;
     protected final HolidayListReader holidayListReader;
     protected final HolidayCalendarFunctions holidayCalendarFunctions;
@@ -29,7 +27,7 @@ public class DefaultHolidayCalendar implements HolidayCalendar {
     }
 
     @Override
-    public List<LocalDate> getHolidays() {
+    public List<Day> getHolidays() {
         return holidays;
     }
 
@@ -39,23 +37,23 @@ public class DefaultHolidayCalendar implements HolidayCalendar {
     }
 
     @Override
-    public LocalDate getNextBusinessDay(LocalDate input, int sign) {
+    public Day getNextBusinessDay(Day input, int sign) {
        return holidayCalendarFunctions.getNextBusinessDay(input, sign, weekendDays, holidays);
     }
 
 
     @Override
-    public LocalDate addBusinessDays(LocalDate input, long numBusDays) {
+    public Day addBusinessDays(Day input, long numBusDays) {
         return holidayCalendarFunctions.addBusinessDays(input, numBusDays, weekendDays, holidays);
     }
 
     @Override
-    public LocalDate getNextBusinessDay(LocalDate input, TBadDayConvention badDayConvention) throws CdsLibraryException {
+    public Day getNextBusinessDay(Day input, TBadDayConvention badDayConvention) throws CdsLibraryException {
         return holidayCalendarFunctions.getNextBusinessDay(input, badDayConvention, weekendDays, holidays);
     }
 
     @Override
-    public boolean isHoliday(LocalDate input) {
+    public boolean isHoliday(Day input) {
         boolean isBusinessDay = holidayCalendarFunctions.isBusinessDay(input, weekendDays, holidays);
         if (!isBusinessDay)
             return true;
@@ -63,8 +61,8 @@ public class DefaultHolidayCalendar implements HolidayCalendar {
     }
 
     @Override
-    public LocalDate[] adjustBusinessDays(LocalDate[] inputs, TBadDayConvention badDayConvention) throws CdsLibraryException {
-        LocalDate[] retList = new LocalDate[inputs.length];
+    public Day[] adjustBusinessDays(Day[] inputs, TBadDayConvention badDayConvention) throws CdsLibraryException {
+        Day[] retList = new Day[inputs.length];
         for (int idx = 0; idx < inputs.length; idx++)
             retList[idx] = getNextBusinessDay(inputs[idx], badDayConvention);
 

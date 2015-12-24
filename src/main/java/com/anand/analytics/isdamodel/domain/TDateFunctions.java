@@ -2,12 +2,17 @@ package com.anand.analytics.isdamodel.domain;
 
 
 import com.anand.analytics.isdamodel.context.XlServerSpringUtils;
+import com.anand.analytics.isdamodel.date.Day;
 import com.anand.analytics.isdamodel.date.HolidayCalendar;
 import com.anand.analytics.isdamodel.date.HolidayCalendarFactory;
-import com.anand.analytics.isdamodel.utils.*;
+import com.anand.analytics.isdamodel.utils.BooleanHolder;
+import com.anand.analytics.isdamodel.utils.DateHolder;
+import com.anand.analytics.isdamodel.utils.DayCount;
+import com.anand.analytics.isdamodel.utils.DoubleHolder;
+import com.anand.analytics.isdamodel.utils.LongHolder;
+import com.anand.analytics.isdamodel.utils.PeriodType;
+import com.anand.analytics.isdamodel.utils.ReturnStatus;
 import org.apache.log4j.Logger;
-import org.threeten.bp.LocalDate;
-import org.threeten.bp.temporal.ChronoUnit;
 
 import static com.anand.analytics.isdamodel.utils.CdsFunctions.MIN;
 
@@ -25,19 +30,21 @@ public class TDateFunctions {
             0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     /* JAN  FEB  MAR  APR  MAY  JUN  JUL  AUG  SEP  OCT  NOV  DEC */
 
-    public static ReturnStatus cdsDayCountFraction(LocalDate date1, LocalDate date2, DayCount method, DoubleHolder result) {
-        LocalDate currentDate;
-        LocalDate temp;
+    public static ReturnStatus cdsDayCountFraction(Day date1, Day date2, DayCount method, DoubleHolder result) {
+        Day currentDate;
+        Day temp;
 
         double sign = 1.;
 
         BooleanHolder isLeap = new BooleanHolder(false);
 
         if (method.equals(DayCount.ACT_365F)) {
-            result.set(date1.periodUntil(date2, ChronoUnit.DAYS) / 365.);
+            //result.set(date1.periodUntil(date2, ChronoUnit.DAYS) / 365.);
+            result.set(date1.getDaysBetween(date2) / 365.);
             return ReturnStatus.SUCCESS;
         } else if (method.equals(DayCount.ACT_360)) {
-            result.set(date1.periodUntil(date2, ChronoUnit.DAYS) / 360.);
+            //result.set(date1.periodUntil(date2, ChronoUnit.DAYS) / 360.);
+            result.set(date1.getDaysBetween(date2) / 360.);
             return ReturnStatus.SUCCESS;
         }
 
@@ -180,14 +187,14 @@ public class TDateFunctions {
         return ReturnStatus.SUCCESS;
     }
 
-    private static ReturnStatus cdsYearStart(LocalDate date, DateHolder result) {
-        LocalDate retDate = LocalDate.of(date.getYear(), 1, 1);
+    private static ReturnStatus cdsYearStart(Day date, DateHolder result) {
+        Day retDate = new Day(date.getYear(), 1, 1);
         result.set(retDate);
 
         return ReturnStatus.SUCCESS;
     }
 
-    private static ReturnStatus cdsIsLeap(LocalDate date1, BooleanHolder isLeap) {
+    private static ReturnStatus cdsIsLeap(Day date1, BooleanHolder isLeap) {
         // Assume not a leap year
         isLeap.set(false);
 
@@ -205,7 +212,7 @@ public class TDateFunctions {
         return ReturnStatus.SUCCESS;
     }
 
-    private static ReturnStatus cdsDaysLeftThisYear(LocalDate date, DayCount method, LongHolder daysLeft) {
+    private static ReturnStatus cdsDaysLeftThisYear(Day date, DayCount method, LongHolder daysLeft) {
         int year;
 
         year = date.getYear();
@@ -214,14 +221,14 @@ public class TDateFunctions {
         next_year.month = 1;
         next_year.day = 1;
 
-        LocalDate nextYearDate = LocalDate.of(year + 1, 1, 1);
+        Day nextYearDate = new Day(year + 1, 1, 1);
         return cdsDaysDiff(date, nextYearDate, method, daysLeft);
 
     }
 
-    private static ReturnStatus cdsDaysDiff(LocalDate date1, LocalDate date2, DayCount method, LongHolder result) {
+    private static ReturnStatus cdsDaysDiff(Day date1, Day date2, DayCount method, LongHolder result) {
         int negative = 0;
-        LocalDate temp;
+        Day temp;
 
         if (date1.isAfter(date2)) {
             negative = 1;
@@ -275,10 +282,10 @@ public class TDateFunctions {
             case ACT_365:
             case ACT_365F:
             case ACT_360:
-                result.set(date1.periodUntil(date2, ChronoUnit.DAYS));
+                result.set(date1.getDaysBetween(date2));
                 break;
             default:
-                result.set(date1.periodUntil(date2, ChronoUnit.DAYS));
+                result.set(date1.getDaysBetween(date2));
                 break;
 
         }
@@ -291,7 +298,7 @@ public class TDateFunctions {
         return ReturnStatus.SUCCESS;
     }
 
-    public static LocalDate dateFromDateAndOffset(LocalDate oldDate,
+    public static Day dateFromDateAndOffset(Day oldDate,
                                                   TDateInterval tDateInterval,
                                                   int index) {
         TDateInterval compoundInterval = tDateInterval;
@@ -300,14 +307,14 @@ public class TDateFunctions {
         return dtFwdAny(oldDate, compoundInterval);
     }
 
-    public static LocalDate dtFwdAny
-            (LocalDate startDate,      /* (I) date */
+    public static Day dtFwdAny
+            (Day startDate,      /* (I) date */
              TDateInterval interval      /* (I) dateInterval */
             ) {
 
         TMonthDayYear mdy = new TMonthDayYear();
         TDateInterval intval = new TDateInterval();
-        LocalDate retDate;
+        Day retDate;
 
         PeriodType periodType = interval.periodType;
         switch (periodType) {
@@ -340,17 +347,17 @@ public class TDateFunctions {
                 mdy.month += intval.prd;
 
                 normalizeMDY(mdy);
-                retDate = LocalDate.of(mdy.year, mdy.month, mdy.day);
+                retDate = new Day(mdy.year, mdy.month, mdy.day);
 
                 break;
 
             case D: /* Dai
             ly increments */
-                retDate = startDate.plusDays(interval.prd);
+                retDate = startDate.plusDays((int)interval.prd);
                 break;
 
             case W:
-                retDate = startDate.plusDays(interval.prd * 7);
+                retDate = startDate.plusDays((int)interval.prd * 7);
                 break;                          /* WEEKly increments */
 
             default:
@@ -394,14 +401,14 @@ public class TDateFunctions {
         mdy.day = day;
     }
 
-    private static void dateToMDY(LocalDate startDate, TMonthDayYear mdy) {
+    private static void dateToMDY(Day startDate, TMonthDayYear mdy) {
         mdy.year = startDate.getYear();
-        mdy.month = startDate.getMonth().getValue();
+        mdy.month = startDate.getMonth();
         mdy.day = startDate.getDayOfMonth();
         mdy.isLeap = startDate.isLeapYear();
     }
 
-    public static ReturnStatus adjustedBusinessDay(LocalDate date, TBadDayConvention method, String calendar, DateHolder returnDate) {
+    public static ReturnStatus adjustedBusinessDay(Day date, TBadDayConvention method, String calendar, DateHolder returnDate) {
         if (method.equals(TBadDayConvention.NONE)) {
             returnDate.set(date);
             return ReturnStatus.SUCCESS;
@@ -411,7 +418,7 @@ public class TDateFunctions {
         try {
             HolidayCalendar holidayCalendar = holidayCalendarFactory.getCalendar(calendar);
 
-            LocalDate retDate = date;
+            Day retDate = date;
             int intervalSign = 1;
 
 
@@ -434,9 +441,9 @@ public class TDateFunctions {
                 ** month, then go backwards.
                 */
                     intervalSign = 1;
-                    LocalDate nextDate = holidayCalendar.getNextBusinessDay(date, intervalSign);
+                    Day nextDate = holidayCalendar.getNextBusinessDay(date, intervalSign);
 
-                    if (date.getMonth().getValue() != nextDate.getMonth().getValue()) {
+                    if (date.getMonth() != nextDate.getMonth()) {
                         //Go back
                         nextDate = holidayCalendar.getNextBusinessDay(nextDate, -intervalSign);
                     }
@@ -457,8 +464,8 @@ public class TDateFunctions {
     }
 
     /*
-    public static LocalDate nextBusinessDay(LocalDate date, int intervalSign, List<LocalDate> holidayList) {
-        LocalDate adjustedDate = date;
+    public static Day nextBusinessDay(Day date, int intervalSign, List<Day> holidayList) {
+        Day adjustedDate = date;
         DayOfWeek dayOfWeek = adjustedDate.getDayOfWeek();
 
         while (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek.equals(DayOfWeek.SUNDAY) || holidayList.contains(adjustedDate)) {
@@ -471,7 +478,7 @@ public class TDateFunctions {
     */
 
     //ToDO
-    public static ReturnStatus cdsDateFwdAdj(LocalDate startDate,
+    public static ReturnStatus cdsDateFwdAdj(Day startDate,
                                              TDateAdjIntvl adjIvl,
                                              DateHolder result) {
         switch (adjIvl.getIsBusDays()) {
@@ -501,7 +508,7 @@ public class TDateFunctions {
 
                     }
 
-                    final LocalDate businessEOM = retValue.get();
+                    final Day businessEOM = retValue.get();
 
 
 
@@ -511,13 +518,13 @@ public class TDateFunctions {
         return ReturnStatus.FAILURE;
     }
 
-    public static ReturnStatus cdsDateToBusinessEOM (LocalDate input, String calendar, DateHolder result) {
+    public static ReturnStatus cdsDateToBusinessEOM (Day input, String calendar, DateHolder result) {
         /**
          * Calculate the last day of the month
          * Adjust backwards for holidays
          */
 
-        final LocalDate monthEndDate = cdsDateToEOM(input);
+        final Day monthEndDate = cdsDateToEOM(input);
 
         final DateHolder returnDate = new DateHolder();
         if(adjustedBusinessDay(monthEndDate, TBadDayConvention.PREVIOUS, calendar, returnDate).equals(ReturnStatus.FAILURE))
@@ -530,16 +537,16 @@ public class TDateFunctions {
 
     }
 
-    private static LocalDate cdsDateToEOM(LocalDate input) {
+    private static Day cdsDateToEOM(Day input) {
         final int day = input.lengthOfMonth();
         final int month = input.getMonthValue();
         final int year = input.getYear();
 
-        return LocalDate.of(year, month, day);
+        return new Day(year, month, day);
     }
 
     public static ReturnStatus cdsDateFromBusDayOffset(
-            LocalDate fromDate,
+            Day fromDate,
             long offset,
             String calendar,
             DateHolder result
@@ -556,7 +563,7 @@ public class TDateFunctions {
         }
     }
 
-    public static boolean IS_BETWEEN(LocalDate x, LocalDate a, LocalDate b) {
+    public static boolean IS_BETWEEN(Day x, Day a, Day b) {
         return a.isBefore(b)
                ? (x.isEqual(a) || x.isAfter(a)) && (x.isEqual(b) || x.isBefore(b))
                : (x.isEqual(b) || x.isAfter(b)) && (x.isEqual(a) || x.isBefore(a));

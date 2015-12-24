@@ -1,24 +1,24 @@
 package com.anand.analytics.isdamodel.domain;
 
-import org.threeten.bp.LocalDate;
+import com.anand.analytics.isdamodel.date.Day;
 
 /**
  * Created by Anand on 12/4/2014.
  */
 public class TFeeLegCashFlow {
-    LocalDate date;
+    Day date;
     double amount;
 
-    public TFeeLegCashFlow(LocalDate date, double amount) {
+    public TFeeLegCashFlow(Day date, double amount) {
         this.date = date;
         this.amount = amount;
     }
 
-    public LocalDate getDate() {
+    public Day getDate() {
         return date;
     }
 
-    public void setDate(LocalDate date) {
+    public void setDate(Day date) {
         this.date = date;
     }
 

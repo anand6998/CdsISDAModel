@@ -1,11 +1,10 @@
 package com.anand.analytics.isdamodel.utils;
 
+import com.anand.analytics.isdamodel.date.Day;
 import com.anand.analytics.isdamodel.domain.TDateInterval;
 import com.anand.analytics.isdamodel.domain.TStubPos;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
 import org.apache.log4j.Logger;
-import org.threeten.bp.LocalDate;
-import org.threeten.bp.temporal.ChronoUnit;
 
 import static com.anand.analytics.isdamodel.domain.TDateFunctions.IS_BETWEEN;
 import static com.anand.analytics.isdamodel.domain.TDateFunctions.dateFromDateAndOffset;
@@ -65,8 +64,8 @@ public class CdsFunctions {
     }
 
     public static ReturnStatus cdsIsEndStub(
-            LocalDate startDate,
-            LocalDate maturityDate,
+            Day startDate,
+            Day maturityDate,
             TDateInterval ivl,
             TStubPos stubPos,
             BooleanHolder isEndStub
@@ -103,7 +102,7 @@ public class CdsFunctions {
         return ReturnStatus.SUCCESS;
     }
 
-    public static ReturnStatus cdsCountDates(LocalDate fromDate, LocalDate toDate, TDateInterval interval, IntHolder numItervals, IntHolder extraDays) {
+    public static ReturnStatus cdsCountDates(Day fromDate, Day toDate, TDateInterval interval, IntHolder numItervals, IntHolder extraDays) {
         try {
             boolean isValid = checkDateInterval(interval, fromDate, toDate);
             if (!isValid)
@@ -115,11 +114,11 @@ public class CdsFunctions {
                 return ReturnStatus.FAILURE;
             }
 
-            double fromToYears = (double) (fromDate.periodUntil(toDate, ChronoUnit.DAYS)) / CdsDateConstants.DAYS_PER_YEAR;
+            double fromToYears = (double) (fromDate.getDaysBetween(toDate)) / CdsDateConstants.DAYS_PER_YEAR;
             int lowNumIntervals = Math.max(0, (int) Math.floor(Math.abs(fromToYears / intervalYears.get())) - 2);
             int index = lowNumIntervals;
-            LocalDate currDate = dateFromDateAndOffset(fromDate, interval, index);
-            LocalDate lastDate = currDate;
+            Day currDate = dateFromDateAndOffset(fromDate, interval, index);
+            Day lastDate = currDate;
 
             while (IS_BETWEEN(currDate, fromDate, toDate)) {
                 ++index;
@@ -133,7 +132,7 @@ public class CdsFunctions {
                 return ReturnStatus.FAILURE;
             }
 
-            extraDays.set((int) Math.abs(lastDate.periodUntil(toDate, ChronoUnit.DAYS)));
+            extraDays.set((int) Math.abs(lastDate.getDaysBetween(toDate)));
         } catch (Exception ex) {
             logger.error(ex);
             return ReturnStatus.FAILURE;
@@ -142,10 +141,10 @@ public class CdsFunctions {
         return ReturnStatus.SUCCESS;
     }
 
-    private static boolean checkDateInterval(TDateInterval interval, LocalDate fromDate, LocalDate toDate) {
+    private static boolean checkDateInterval(TDateInterval interval, Day fromDate, Day toDate) {
         if (interval.prd == 0)
             return false;
-        if (fromDate.periodUntil(toDate, ChronoUnit.DAYS) < 0) {
+        if (fromDate.getDaysBetween(toDate) < 0) {
             logger.error("Invalid to and from dates");
             return false;
         }

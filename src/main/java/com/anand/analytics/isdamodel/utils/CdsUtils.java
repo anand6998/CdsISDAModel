@@ -1,8 +1,8 @@
 package com.anand.analytics.isdamodel.utils;
 
+import com.anand.analytics.isdamodel.date.Day;
 import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
-import org.threeten.bp.LocalDate;
 
 /**
  * Created by Anand on 12/1/2014.
@@ -10,8 +10,8 @@ import org.threeten.bp.LocalDate;
 public class CdsUtils {
     final static Logger logger = Logger.getLogger(CdsUtils.class);
 
-    public static ReturnStatus binarySearchLong(LocalDate xDesired,
-                                                LocalDate[] xArray,
+    public static ReturnStatus binarySearchLong(Day xDesired,
+                                                Day[] xArray,
                                                 IntHolder exact,
                                                 IntHolder loBound,
                                                 IntHolder hiBound) {

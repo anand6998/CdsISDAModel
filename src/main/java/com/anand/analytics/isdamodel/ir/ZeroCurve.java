@@ -1,16 +1,18 @@
 package com.anand.analytics.isdamodel.ir;
 
+import com.anand.analytics.isdamodel.date.Day;
 import com.anand.analytics.isdamodel.domain.TCurve;
 import com.anand.analytics.isdamodel.domain.TDateFunctions;
 import com.anand.analytics.isdamodel.domain.TRateFunctions;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
-import com.anand.analytics.isdamodel.utils.*;
-
+import com.anand.analytics.isdamodel.utils.CdsUtils;
+import com.anand.analytics.isdamodel.utils.DayCount;
+import com.anand.analytics.isdamodel.utils.DayCountBasis;
+import com.anand.analytics.isdamodel.utils.DoubleHolder;
+import com.anand.analytics.isdamodel.utils.IntHolder;
+import com.anand.analytics.isdamodel.utils.ReturnStatus;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.Validate;
-import org.threeten.bp.LocalDate;
-import org.threeten.bp.temporal.ChronoUnit;
-
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
@@ -22,9 +24,9 @@ import java.util.List;
 public class ZeroCurve {
     private final static Logger logger = Logger.getLogger(ZeroCurve.class);
 
-    private LocalDate valueDate;
+    private Day valueDate;
     private List<Double> rates;
-    private List<LocalDate> dates;
+    private List<Day> dates;
     private List<Double> discs;
 
     private DayCountBasis dayCountBasis;
@@ -33,7 +35,7 @@ public class ZeroCurve {
     private int fNumItems;
 
 
-    public ZeroCurve(LocalDate valueDate, DayCountBasis dayCountBasis, DayCount dayCount) {
+    public ZeroCurve(Day valueDate, DayCountBasis dayCountBasis, DayCount dayCount) {
         this.valueDate = valueDate;
         this.dayCountBasis = dayCountBasis;
         this.dayCount = dayCount;
@@ -43,7 +45,7 @@ public class ZeroCurve {
         discs = new ArrayList<>();
     }
 
-    public LocalDate getValueDate() {
+    public Day getValueDate() {
         return valueDate;
     }
 
@@ -51,8 +53,8 @@ public class ZeroCurve {
         return ArrayUtils.toPrimitive(rates.toArray(new Double[0]));
     }
 
-    public LocalDate[] getDates() {
-        return (dates.toArray(new LocalDate[0]));
+    public Day[] getDates() {
+        return (dates.toArray(new Day[0]));
     }
 
     public double[] getDiscs() {
@@ -80,7 +82,7 @@ public class ZeroCurve {
         this.fNumItems = curve.getDates().length;
     }
 
-    public void addRates(LocalDate[] dates, double[] rates, DayCount dayCount) throws CdsLibraryException {
+    public void addRates(Day[] dates, double[] rates, DayCount dayCount) throws CdsLibraryException {
         try {
             Validate.isTrue(dates.length == rates.length, "dates.length != rates.length");
             for (int i = 0; i < dates.length; i++) {
@@ -94,7 +96,7 @@ public class ZeroCurve {
         }
     }
 
-    private void addGenRate(LocalDate date, double rate, DayCountBasis basis, DayCount dayCount) throws CdsLibraryException {
+    private void addGenRate(Day date, double rate, DayCountBasis basis, DayCount dayCount) throws CdsLibraryException {
         if (basis.equals(this.dayCountBasis) && dayCount.equals(this.dayCount)) {
             addRate(date, rate);
             return;
@@ -103,11 +105,11 @@ public class ZeroCurve {
         cdsRateToDiscount(rate, valueDate, date, dayCount, basis);
     }
 
-    private void addRate(LocalDate date, double rate) throws CdsLibraryException {
+    private void addRate(Day date, double rate) throws CdsLibraryException {
         double discount = computeDiscount(date, rate);
         addRate(date, rate, discount);
     }
-    private void addRate(LocalDate date, double rate, double disc) throws CdsLibraryException {
+    private void addRate(Day date, double rate, double disc) throws CdsLibraryException {
         /**
          * Make sure date not already in list
          *
@@ -129,12 +131,12 @@ public class ZeroCurve {
             IntHolder exact = new IntHolder(0);
             IntHolder loBound = new IntHolder(0);
             IntHolder hiBound = new IntHolder(0);
-            ReturnStatus status = CdsUtils.binarySearchLong(date, dates.toArray(new LocalDate[0]), exact, loBound, hiBound);
+            ReturnStatus status = CdsUtils.binarySearchLong(date, dates.toArray(new Day[0]), exact, loBound, hiBound);
 
             if (status.equals(ReturnStatus.FAILURE))
                 throw new CdsLibraryException("Failed locating index for date");
 
-            List<LocalDate> newDates = new ArrayList<>();
+            List<Day> newDates = new ArrayList<>();
             List<Double> newRates = new ArrayList<>();
             List<Double> newDiscs = new ArrayList<>();
 
@@ -169,15 +171,19 @@ public class ZeroCurve {
     }
 
     public TCurve toTCurve() throws CdsLibraryException {
-        return new TCurve(valueDate, dates.toArray(new LocalDate[0]), ArrayUtils.toPrimitive( rates.toArray(new Double[0])), dayCountBasis, dayCount);
+        try {
+            return new TCurve(valueDate, dates.toArray(new Day[0]), ArrayUtils.toPrimitive( rates.toArray(new Double[0])), dayCountBasis, dayCount);
+        } catch (Exception e) {
+            throw new CdsLibraryException(e.getMessage());
+        }
     }
 
-    private double computeDiscount(LocalDate date, double rate) throws CdsLibraryException {
+    private double computeDiscount(Day date, double rate) throws CdsLibraryException {
         if (this.dayCountBasis.equals(DayCountBasis.ANNUAL_BASIS) &&
                 rate >= -1.0 &&
                 date.isAfter(valueDate) &&
                 (this.dayCount.equals(DayCount.ACT_365F) || this.dayCount.equals(DayCount.ACT_360) )) {
-            double discount = Math.pow( 1 + rate, (valueDate.periodUntil(date, ChronoUnit.DAYS) * -1) / (dayCount.equals(DayCount.ACT_360) ? 360. : 365. ));
+            double discount = Math.pow( 1 + rate, (valueDate.getDaysBetween(date) * -1) / (dayCount.equals(DayCount.ACT_360) ? 360. : 365. ));
             return discount;
         }
 
@@ -185,7 +191,7 @@ public class ZeroCurve {
         return df;
     }
 
-    private double cdsRateToDiscount(double rate, LocalDate startDate, LocalDate endDate, DayCount rateDayCountConv, DayCountBasis rateBasis)
+    private double cdsRateToDiscount(double rate, Day startDate, Day endDate, DayCount rateDayCountConv, DayCountBasis rateBasis)
     throws CdsLibraryException{
         if (rateBasis.equals(DayCountBasis.DISCOUNT_FACTOR)) {
             if (rate <= 0.0)

@@ -1,19 +1,19 @@
 package com.anand.analytics.isdamodel.domain;
 
-import org.threeten.bp.LocalDate;
+import com.anand.analytics.isdamodel.date.Day;
 
 /**
  * Created by anand on 1/1/15.
  */
 public class TCashFlow {
-    private LocalDate fDate;
+    private Day fDate;
     private double amount;
 
-    public LocalDate getfDate() {
+    public Day getfDate() {
         return fDate;
     }
 
-    public void setfDate(LocalDate fDate) {
+    public void setfDate(Day fDate) {
         this.fDate = fDate;
     }
 
@@ -25,7 +25,7 @@ public class TCashFlow {
         this.amount = amount;
     }
 
-    public TCashFlow(LocalDate fDate, double amount) {
+    public TCashFlow(Day fDate, double amount) {
         this.fDate = fDate;
         this.amount = amount;
     }

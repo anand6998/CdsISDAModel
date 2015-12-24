@@ -1,15 +1,29 @@
 package com.anand.analytics.isdamodel.ir;
 
+import com.anand.analytics.isdamodel.date.Day;
 import com.anand.analytics.isdamodel.date.HolidayCalendar;
-import com.anand.analytics.isdamodel.domain.*;
+import com.anand.analytics.isdamodel.domain.TBadDayConvention;
+import com.anand.analytics.isdamodel.domain.TBadDayList;
+import com.anand.analytics.isdamodel.domain.TCashFlow;
+import com.anand.analytics.isdamodel.domain.TCurve;
+import com.anand.analytics.isdamodel.domain.TDateInterval;
+import com.anand.analytics.isdamodel.domain.TInstrumentType;
+import com.anand.analytics.isdamodel.domain.TInterpData;
+import com.anand.analytics.isdamodel.domain.TInterpType;
+import com.anand.analytics.isdamodel.domain.TRateFunctions;
+import com.anand.analytics.isdamodel.domain.TStubPos;
+import com.anand.analytics.isdamodel.domain.TSwapDate;
 import com.anand.analytics.isdamodel.exception.CdsLibraryException;
-import com.anand.analytics.isdamodel.utils.*;
+import com.anand.analytics.isdamodel.utils.BooleanHolder;
+import com.anand.analytics.isdamodel.utils.CdsFunctions;
+import com.anand.analytics.isdamodel.utils.DayCount;
+import com.anand.analytics.isdamodel.utils.DayCountBasis;
+import com.anand.analytics.isdamodel.utils.DoubleHolder;
+import com.anand.analytics.isdamodel.utils.IntHolder;
+import com.anand.analytics.isdamodel.utils.ReturnStatus;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
-import org.threeten.bp.LocalDate;
-import org.threeten.bp.chrono.ChronoLocalDate;
-import org.threeten.bp.temporal.ChronoUnit;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,9 +38,9 @@ public class IRCurveBuilder {
     private final static Logger logger = Logger.getLogger(IRCurveBuilder.class);
 
     public static TCurve buildIRZeroCurve(
-            LocalDate valueDate,
+            Day valueDate,
             char[] instrumentNames,
-            LocalDate[] dates,
+            Day[] dates,
             double[] rates,
             DayCount mmDCC,
             long fixedSwapFreq,
@@ -36,8 +50,8 @@ public class IRCurveBuilder {
             TBadDayConvention badDayConvention,
             HolidayCalendar calendar
     ) throws CdsLibraryException {
-        final List<LocalDate> cashDates = new ArrayList<LocalDate>();
-        final List<LocalDate> swapDates = new ArrayList<LocalDate>();
+        final List<Day> cashDates = new ArrayList<Day>();
+        final List<Day> swapDates = new ArrayList<Day>();
 
         final List<Double> cashRates = new ArrayList<Double>();
         final List<Double> swapRates = new ArrayList<>();
@@ -63,8 +77,8 @@ public class IRCurveBuilder {
             }
         }
 
-        final LocalDate[] cashDatesArr = cashDates.toArray(new LocalDate[0]);
-        final LocalDate[] swapDatesArr = swapDates.toArray(new LocalDate[0]);
+        final Day[] cashDatesArr = cashDates.toArray(new Day[0]);
+        final Day[] swapDatesArr = swapDates.toArray(new Day[0]);
 
         final double[] cashRatesArr = ArrayUtils.toPrimitive(cashRates.toArray(new Double[0]));
         final double[] swapRatesArr = ArrayUtils.toPrimitive(swapRates.toArray(new Double[0]));
@@ -92,7 +106,7 @@ public class IRCurveBuilder {
 
     private static TCurve buildZeroCurveSwap(ZeroCurve zeroCurve,
                                              TCurve discountZC,
-                                             LocalDate swapDates[],
+                                             Day swapDates[],
                                              double swapRates[],
                                              int numSwaps,
                                              long fixedSwapFreq,
@@ -123,7 +137,7 @@ public class IRCurveBuilder {
                 badDayConvention,
                 calendar);
 
-        LocalDate lastStubDate;
+        Day lastStubDate;
         if (zeroCurve.getfNumItems() < 1) {
             lastStubDate = zeroCurve.getValueDate();
         } else {
@@ -131,7 +145,7 @@ public class IRCurveBuilder {
         }
 
         int offset = 0;
-        List<LocalDate> offsetSwapDatesList = new ArrayList<>();
+        List<Day> offsetSwapDatesList = new ArrayList<>();
         List<Double> offsetSwapRatesList = new ArrayList<>();
 
         while (numSwaps > 0 && swapDates[offset].isBefore(lastStubDate)) {
@@ -148,7 +162,7 @@ public class IRCurveBuilder {
             offsetSwapRatesList.add(swapRates[i]);
         }
 
-        LocalDate[] offsetSwapDates = offsetSwapDatesList.toArray(new LocalDate[0]);
+        Day[] offsetSwapDates = offsetSwapDatesList.toArray(new Day[0]);
         double[] offsetSwapRates = ArrayUtils.toPrimitive(offsetSwapRatesList.toArray(new Double[0]));
         //endregion
 
@@ -181,7 +195,7 @@ public class IRCurveBuilder {
 
     private static void zcAddSwaps(ZeroCurve zeroCurve,
                                    TCurve discountZC,
-                                   LocalDate[] inDates,
+                                   Day[] inDates,
                                    double[] inRates,
                                    int numSwaps,
                                    long fixedSwapFreq,
@@ -307,7 +321,7 @@ public class IRCurveBuilder {
     private static ReturnStatus zcAddSwap(ZeroCurve zeroCurve,
                                           TCurve discountZC,
                                           double price,
-                                          LocalDate matDate,
+                                          Day matDate,
                                           boolean onCycle,
                                           double rate,
                                           long fixedSwapFreq,
@@ -362,7 +376,7 @@ public class IRCurveBuilder {
                 /**
                  * Adjust matDate to be a good business day
                  */
-                LocalDate adjustedMatDate = calendar.getNextBusinessDay(matDate, badDayConvention);
+                Day adjustedMatDate = calendar.getNextBusinessDay(matDate, badDayConvention);
 
                 /**
                  * Add rate implied by cash flow list to the zeroCurve
@@ -410,7 +424,7 @@ public class IRCurveBuilder {
     private static void zcAddCashFlowList(ZeroCurve zc,
                                           TCashFlow[] cfl,
                                           double price,
-                                          LocalDate date,
+                                          Day date,
                                           TInterpType interpType,
                                           TInterpData interpData)
         throws CdsLibraryException {
@@ -426,7 +440,7 @@ public class IRCurveBuilder {
             interpType = TInterpType.LINEAR_INTERP;
         } else {
             /* last date in zCurve */
-            LocalDate lastZcDate = zc.getDates()[zc.getfNumItems() - 1];
+            Day lastZcDate = zc.getDates()[zc.getfNumItems() - 1];
             if (date.isEqual(lastZcDate) || date.isBefore(lastZcDate)) {
                 throw new CdsLibraryException("Date to add already covered");
             }
@@ -492,7 +506,7 @@ public class IRCurveBuilder {
 
         for (i = iLo; i <= iHi; i++) {
             double amt = cfl[i].getAmount();
-            LocalDate date = cfl[i].getfDate();
+            Day date = cfl[i].getfDate();
 
             double pv;
             //push j upto cf date
@@ -521,7 +535,7 @@ public class IRCurveBuilder {
      */
     private static double zcPresentValue(ZeroCurve zc,
                                          double price,
-                                         LocalDate date,
+                                         Day date,
                                          TInterpType interpType,
                                          TInterpData interpData)
     throws CdsLibraryException {
@@ -534,7 +548,7 @@ public class IRCurveBuilder {
 
     private static double zcDiscountFactor(
             ZeroCurve zc,
-            LocalDate date,
+            Day date,
             TInterpType interpType,
             TInterpData interpData
     ) throws CdsLibraryException {
@@ -557,8 +571,8 @@ public class IRCurveBuilder {
     }
 
 
-    private static TCashFlow[] zcGetSwapCashFlowList(LocalDate valueDate,
-                                                     LocalDate matDate,
+    private static TCashFlow[] zcGetSwapCashFlowList(Day valueDate,
+                                                     Day matDate,
                                                      boolean stubAtEnd,
                                                      double rate,
                                                      TDateInterval interval,
@@ -570,13 +584,13 @@ public class IRCurveBuilder {
         if (rate == 0.0) {
             tCashFlows = new TCashFlow[1];
             double amount = 1;
-            LocalDate adjustedDate = calendar.getNextBusinessDay(matDate, badDayConvention);
+            Day adjustedDate = calendar.getNextBusinessDay(matDate, badDayConvention);
             TCashFlow tCashFlow = new TCashFlow(adjustedDate, amount);
             tCashFlows[0] = tCashFlow;
             return tCashFlows;
         }
 
-        LocalDate[] dateList = zcGetSwapCouponDateList(valueDate,
+        Day[] dateList = zcGetSwapCouponDateList(valueDate,
                 matDate,
                 stubAtEnd,
                 interval,
@@ -585,9 +599,9 @@ public class IRCurveBuilder {
                 calendar);
 
         tCashFlows = new TCashFlow[dateList.length];
-        LocalDate prevDate = valueDate;
+        Day prevDate = valueDate;
         for (int i = 0; i < dateList.length; i++) {
-            LocalDate cDate = dateList[i];
+            Day cDate = dateList[i];
 
             DoubleHolder yearFraction = new DoubleHolder();
             if(cdsDayCountFraction(prevDate, cDate, dayCountConv, yearFraction).equals(ReturnStatus.FAILURE))
@@ -624,8 +638,8 @@ public class IRCurveBuilder {
      * @param calendar
      * @return
      */
-    private static LocalDate[] zcGetSwapCouponDateList(LocalDate valueDate,
-                                                       LocalDate matDate,
+    private static Day[] zcGetSwapCouponDateList(Day valueDate,
+                                                       Day matDate,
                                                        boolean stubAtEnd,
                                                        TDateInterval interval,
                                                        TBadDayList badDayList,
@@ -636,7 +650,7 @@ public class IRCurveBuilder {
          * If the maturity date is onCycle, then the stub is at end, because
          * we are counting forward from the maturity date
          */
-        LocalDate[] dl = cdsNewPayDates(valueDate, matDate, interval, stubAtEnd);
+        Day[] dl = cdsNewPayDates(valueDate, matDate, interval, stubAtEnd);
 
         /**
          * Now adjust for bad days
@@ -654,16 +668,16 @@ public class IRCurveBuilder {
      * @return
      * @throws CdsLibraryException
      */
-    private static LocalDate[] cdsNewPayDates(LocalDate startDate, LocalDate matDate, TDateInterval payInterval, boolean stubAtEnd)
+    private static Day[] cdsNewPayDates(Day startDate, Day matDate, TDateInterval payInterval, boolean stubAtEnd)
     throws CdsLibraryException{
-        LocalDate[] payDates = cdsNewDateList(startDate, matDate, payInterval, stubAtEnd);
+        Day[] payDates = cdsNewDateList(startDate, matDate, payInterval, stubAtEnd);
 
         /**
          * Now remove startDate, and move all dates back by one
          *
          */
         int size = payDates.length;
-        LocalDate[] newPayDates = new LocalDate[size - 1];
+        Day[] newPayDates = new Day[size - 1];
         for (int idx = 0; idx < size - 1; idx++)
             newPayDates[idx] = payDates[idx + 1];
 
@@ -689,7 +703,7 @@ public class IRCurveBuilder {
      * @param stubAtEnd
      * @return
      */
-    private static LocalDate[] cdsNewDateList(LocalDate startDate, LocalDate maturityDate, TDateInterval interval, boolean stubAtEnd)
+    private static Day[] cdsNewDateList(Day startDate, Day maturityDate, TDateInterval interval, boolean stubAtEnd)
     throws CdsLibraryException {
         IntHolder numIntervals = new IntHolder();
         IntHolder extraDays = new IntHolder();
@@ -714,13 +728,13 @@ public class IRCurveBuilder {
         else
             numDates = numIntervals.get() + 1;
 
-        return new LocalDate[numDates];
+        return new Day[numDates];
     }
 
 
-    private static TSwapDate[] swapDatesNewFromOriginal(LocalDate valueDate,
+    private static TSwapDate[] swapDatesNewFromOriginal(Day valueDate,
                                                         long freq,
-                                                        LocalDate[] swapDates,
+                                                        Day[] swapDates,
                                                         int numDates,
                                                         TBadDayList tBadDayList,
                                                         TBadDayConvention badDayConvention,
@@ -730,7 +744,7 @@ public class IRCurveBuilder {
             TSwapDate tSwapDate = new TSwapDate();
             tSwapDate.setOriginalDate(swapDates[idx]);
 
-            LocalDate adjustedDate = calendar.getNextBusinessDay(swapDates[idx], badDayConvention);
+            Day adjustedDate = calendar.getNextBusinessDay(swapDates[idx], badDayConvention);
             tSwapDate.setAdjustedDate(adjustedDate);
 
             setPreviousDateAndOnCycle(valueDate, swapDates[idx], freq, tSwapDate);
@@ -741,7 +755,7 @@ public class IRCurveBuilder {
 
     }
 
-    private static void setPreviousDateAndOnCycle(LocalDate valueDate, LocalDate origDate, long freq, TSwapDate tSwapDate)
+    private static void setPreviousDateAndOnCycle(Day valueDate, Day origDate, long freq, TSwapDate tSwapDate)
             throws CdsLibraryException {
         try {
             TDateInterval interval = CdsFunctions.cdsFreq2TDateInterval(freq);
@@ -771,10 +785,10 @@ public class IRCurveBuilder {
              * If off cycle count backward from maturity date
              */
             if (tSwapDate.isOnCycle()) {
-                LocalDate prevDate = dateFromDateAndOffset(valueDate, interval, numItervals.get() - 1);
+                Day prevDate = dateFromDateAndOffset(valueDate, interval, numItervals.get() - 1);
                 tSwapDate.setPreviousDate(prevDate);
             } else {
-                LocalDate prevDate = dateFromDateAndOffset(origDate, interval, -1);
+                Day prevDate = dateFromDateAndOffset(origDate, interval, -1);
                 tSwapDate.setPreviousDate(prevDate);
             }
         } catch (Exception ex) {
@@ -787,7 +801,7 @@ public class IRCurveBuilder {
 
     private static void checkSwapInputs(TCurve zeroCurve,
                                         TCurve discountZC,
-                                        LocalDate[] swapDates,
+                                        Day[] swapDates,
                                         double[] swapRates,
                                         int numSwaps,
                                         long fixedSwapFreq,

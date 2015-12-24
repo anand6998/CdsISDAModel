@@ -1,6 +1,6 @@
 package com.anand.analytics.isdamodel.domain;
 
-import org.threeten.bp.LocalDate;
+import com.anand.analytics.isdamodel.date.Day;
 
 /**
  * Created by anand on 12/31/14.
@@ -8,8 +8,8 @@ import org.threeten.bp.LocalDate;
 public class TBadDayList {
     int count;
     int maxAllowed;
-    LocalDate[] badDay;
-    LocalDate[] goodDay;
+    Day[] badDay;
+    Day[] goodDay;
 
     public int getCount() {
         return count;
@@ -27,19 +27,19 @@ public class TBadDayList {
         this.maxAllowed = maxAllowed;
     }
 
-    public LocalDate[] getBadDay() {
+    public Day[] getBadDay() {
         return badDay;
     }
 
-    public void setBadDay(LocalDate[] badDay) {
+    public void setBadDay(Day[] badDay) {
         this.badDay = badDay;
     }
 
-    public LocalDate[] getGoodDay() {
+    public Day[] getGoodDay() {
         return goodDay;
     }
 
-    public void setGoodDay(LocalDate[] goodDay) {
+    public void setGoodDay(Day[] goodDay) {
         this.goodDay = goodDay;
     }
 }

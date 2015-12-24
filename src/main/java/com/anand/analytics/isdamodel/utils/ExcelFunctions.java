@@ -9,9 +9,11 @@ import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 import org.boris.xlloop.util.Day;
 import org.boris.xlloop.util.ExcelDate;
-import org.threeten.bp.LocalDate;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,9 +31,9 @@ public class ExcelFunctions {
 
 
 
-    public static LocalDate xlDateToLocalDateTime(final double anXLDate) {
+    public static com.anand.analytics.isdamodel.date.Day xlDateToLocalDateTime(final double anXLDate) {
         Day aDay = Day.fromExcelDate(anXLDate);
-        LocalDate localDate = LocalDate.of(aDay.getYear(), aDay.getMonth(), aDay.getDay());
+        com.anand.analytics.isdamodel.date.Day localDate = new com.anand.analytics.isdamodel.date.Day(aDay.getYear(), aDay.getMonth(), aDay.getDay());
         return localDate;
     }
 
@@ -61,11 +63,11 @@ public class ExcelFunctions {
         return returnArray;
     }
 
-    public static LocalDate[] xlDatesToLocalDateTimeArray(final double[] anXlDateArray) {
-        LocalDate[] dates = new LocalDate[anXlDateArray.length];
+    public static com.anand.analytics.isdamodel.date.Day[] xlDatesToLocalDateTimeArray(final double[] anXlDateArray) {
+        com.anand.analytics.isdamodel.date.Day[] dates = new com.anand.analytics.isdamodel.date.Day[anXlDateArray.length];
         for (int i = 0; i < anXlDateArray.length; i++) {
             Day aDay = Day.fromExcelDate(anXlDateArray[i]);
-            LocalDate localDate = LocalDate.of(aDay.getYear(), aDay.getMonth(), aDay.getDay());
+            com.anand.analytics.isdamodel.date.Day localDate = new com.anand.analytics.isdamodel.date.Day(aDay.getYear(), aDay.getMonth(), aDay.getDay());
             dates[i] = localDate;
         }
 
@@ -269,15 +271,15 @@ public class ExcelFunctions {
         }
     }
 
-    public static double localDateToExcelDate(LocalDate date) {
+    public static double localDateToExcelDate(com.anand.analytics.isdamodel.date.Day date) {
         double xlDate = ExcelDate.date(date.getYear(), date.getMonthValue() - 1, date.getDayOfMonth());
         return xlDate;
     }
 
-    public static double[] localDateArrayToExcelDateArray(LocalDate[] dates) {
+    public static double[] localDateArrayToExcelDateArray(com.anand.analytics.isdamodel.date.Day[] dates) {
         double[] dateArray = new double[dates.length];
         int i = 0;
-        for (LocalDate date : dates) {
+        for (com.anand.analytics.isdamodel.date.Day date : dates) {
             double xlDate = localDateToExcelDate(date);
             dateArray[i++] = xlDate;
 
@@ -285,7 +287,7 @@ public class ExcelFunctions {
         return dateArray;
     }
 
-    public static LocalDate MAX_DATE(LocalDate date1, LocalDate date2) {
+    public static com.anand.analytics.isdamodel.date.Day MAX_DATE(com.anand.analytics.isdamodel.date.Day date1, com.anand.analytics.isdamodel.date.Day date2) {
         return date1.isAfter(date2) ? date1 : date2;
     }
 }

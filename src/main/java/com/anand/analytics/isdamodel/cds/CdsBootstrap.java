@@ -1,10 +1,23 @@
 package com.anand.analytics.isdamodel.cds;
 
 
-import com.anand.analytics.isdamodel.domain.*;
-import com.anand.analytics.isdamodel.utils.*;
+import com.anand.analytics.isdamodel.date.Day;
+import com.anand.analytics.isdamodel.domain.TBadDayConvention;
+import com.anand.analytics.isdamodel.domain.TContingentLeg;
+import com.anand.analytics.isdamodel.domain.TCurve;
+import com.anand.analytics.isdamodel.domain.TDateInterval;
+import com.anand.analytics.isdamodel.domain.TFeeLeg;
+import com.anand.analytics.isdamodel.domain.TProtPayConv;
+import com.anand.analytics.isdamodel.domain.TStubMethod;
+import com.anand.analytics.isdamodel.utils.CdsBootstrapContext;
+import com.anand.analytics.isdamodel.utils.DayCount;
+import com.anand.analytics.isdamodel.utils.DayCountBasis;
+import com.anand.analytics.isdamodel.utils.DoubleHolder;
+import com.anand.analytics.isdamodel.utils.PeriodType;
+import com.anand.analytics.isdamodel.utils.ReturnStatus;
+import com.anand.analytics.isdamodel.utils.RootFindBrent;
+import com.anand.analytics.isdamodel.utils.SolvableFunction;
 import org.apache.log4j.Logger;
-import org.threeten.bp.LocalDate;
 
 import static com.anand.analytics.isdamodel.domain.TRateFunctions.cdsConvertCompoundRate;
 import static com.anand.analytics.isdamodel.domain.TRateFunctions.cdsForwardZeroPrice;
@@ -19,13 +32,13 @@ public class CdsBootstrap {
      * The main bootstrap routine
      */
     public static TCurve cdsCleanSpreadCurve
-    (LocalDate today,           /* (I) Used as credit curve base date       */
+    (Day today,           /* (I) Used as credit curve base date       */
      TCurve discountCurve,      /* (I) Risk-free discount curve             */
-     LocalDate startDate,       /* (I) Start of CDS for accrual and risk    */
-     LocalDate stepinDate,      /* (I) Stepin date                          */
-     LocalDate cashSettleDate,  /* (I) Pay date                             */
+     Day startDate,       /* (I) Start of CDS for accrual and risk    */
+     Day stepinDate,      /* (I) Stepin date                          */
+     Day cashSettleDate,  /* (I) Pay date                             */
      long nbDate,               /* (I) Number of benchmark dates            */
-     LocalDate[] endDates,      /* (I) Maturity dates of CDS to bootstrap   */
+     Day[] endDates,      /* (I) Maturity dates of CDS to bootstrap   */
      double[] couponRates,      /* (I) CouponRates (e.g. 0.05 = 5% = 500bp) */
      Boolean[] includes,        /* (I) Include this date. Can be NULL if
                                         all are included.                           */
@@ -39,7 +52,7 @@ public class CdsBootstrap {
     ) throws Exception {
 
 
-        LocalDate[] includeEndDates = null;
+        Day[] includeEndDates = null;
         double[] includeCouponRates = null;
 
         final TDateInterval ivl3M = new TDateInterval(3, PeriodType.M, 0);
@@ -59,7 +72,7 @@ public class CdsBootstrap {
                 throw new RuntimeException("Something wrong with includes");
             }
 
-            includeEndDates = new LocalDate[nbInclude];
+            includeEndDates = new Day[nbInclude];
             includeCouponRates = new double[nbInclude];
 
             j = 0;
@@ -110,13 +123,13 @@ public class CdsBootstrap {
      * *
      * **************************************************************************
      */
-    public static TCurve bootstrap(LocalDate today,                /* Used as credit curve base date       */
+    public static TCurve bootstrap(Day today,                /* Used as credit curve base date       */
                                    TCurve discountCurve,           /* Risk Free discount curve             */
-                                   LocalDate startDate,            /* Start of CDS for accrual and risk    */
-                                   LocalDate stepinDate,           /* Stepin date                          */
-                                   LocalDate cashSettleDate,       /* Pay date                             */
+                                   Day startDate,            /* Start of CDS for accrual and risk    */
+                                   Day stepinDate,           /* Stepin date                          */
+                                   Day cashSettleDate,       /* Pay date                             */
                                    long nbDate,                    /* Number of benchmark dates            */
-                                   LocalDate[] endDates,           /* Maturity dates of CDS to bootstrap   */
+                                   Day[] endDates,           /* Maturity dates of CDS to bootstrap   */
                                    double[] couponRates,           /* Coupon rates e.g. 0.05 = 5% = 500 bp */
                                    double recoveryRate,            /* Recovery rate                        */
                                    boolean payAccOnDefault,        /* Pay accrued on default               */
@@ -142,7 +155,7 @@ public class CdsBootstrap {
 
             final DoubleHolder spread = new DoubleHolder();
             final double guess = couponRates[i] / (1.0 - recoveryRate);
-            final LocalDate maxDate = startDate.isAfter(today) ? startDate : today;
+            final Day maxDate = startDate.isAfter(today) ? startDate : today;
             final TContingentLeg cl = new TContingentLeg(maxDate, endDates[i], 1.0, protectStart, TProtPayConv.PROT_PAY_DEF);
             final TFeeLeg fl = new TFeeLeg(startDate,
                     endDates[i],
@@ -226,9 +239,9 @@ class CdsBootStrapFunction implements SolvableFunction {
         final double recoveryRate = context.recoveryRate;
         final TContingentLeg cl = context.contigentLeg;
         final TFeeLeg fl = context.feeLeg;
-        final LocalDate cdsBaseDate = cdsCurve.getBaseDate();
-        final LocalDate stepInDate = context.stepinDate;
-        final LocalDate cashSettleDate = context.cashSettleDate;
+        final Day cdsBaseDate = cdsCurve.getBaseDate();
+        final Day stepInDate = context.stepinDate;
+        final Day cashSettleDate = context.cashSettleDate;
         final boolean isPriceClean = true;
 
         final double pvC; /* PV of contingent leg */
